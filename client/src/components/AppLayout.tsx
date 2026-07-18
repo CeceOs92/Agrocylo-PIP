@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 const navigation = [
   { label: 'Home', to: '/', end: true },
@@ -9,7 +9,7 @@ const navigation = [
   { label: 'Admin', to: '/dashboard/admin' },
   { label: 'Activity', to: '/activity' },
   { label: 'Profile', to: '/profile' },
-]
+];
 
 function Logo() {
   return (
@@ -22,15 +22,29 @@ function Logo() {
         className="flex h-9 w-9 items-center justify-center rounded-full bg-leaf-700 text-white"
         aria-hidden="true"
       >
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          viewBox="0 0 24 24"
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M12 21V9" strokeLinecap="round" />
-          <path d="M12 13C8 13 5 10.5 5 7c4 0 7 2.5 7 6Z" strokeLinejoin="round" />
-          <path d="M12 17c4 0 7-2.5 7-6-4 0-7 2.5-7 6Z" strokeLinejoin="round" />
+          <path
+            d="M12 13C8 13 5 10.5 5 7c4 0 7 2.5 7 6Z"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M12 17c4 0 7-2.5 7-6-4 0-7 2.5-7 6Z"
+            strokeLinejoin="round"
+          />
         </svg>
       </span>
-      <span className="text-lg font-bold tracking-tight text-soil-950">AgroCylo</span>
+      <span className="text-lg font-bold tracking-tight text-soil-950">
+        AgroCylo
+      </span>
     </Link>
-  )
+  );
 }
 
 function NavigationLinks({ mobile = false }: { mobile?: boolean }) {
@@ -55,16 +69,17 @@ function NavigationLinks({ mobile = false }: { mobile?: boolean }) {
         </NavLink>
       ))}
     </>
-  )
+  );
 }
 
 export function AppLayout() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const location = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
-    setMenuOpen(false)
-  }, [location.pathname])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -72,7 +87,10 @@ export function AppLayout() {
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
           <Logo />
 
-          <nav className="ml-auto hidden items-center gap-1 lg:flex" aria-label="Primary navigation">
+          <nav
+            className="ml-auto hidden items-center gap-1 lg:flex"
+            aria-label="Primary navigation"
+          >
             <NavigationLinks />
           </nav>
 
@@ -89,10 +107,19 @@ export function AppLayout() {
             className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-lg text-soil-700 hover:bg-soil-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500 lg:hidden"
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation"
-            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-label={
+              menuOpen ? 'Close navigation menu' : 'Open navigation menu'
+            }
             onClick={() => setMenuOpen((open) => !open)}
           >
-            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
               {menuOpen ? (
                 <path d="m6 6 12 12M18 6 6 18" strokeLinecap="round" />
               ) : (
@@ -128,12 +155,17 @@ export function AppLayout() {
 
       <footer className="border-t border-soil-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-sm text-soil-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <p>© {new Date().getFullYear()} AgroCylo. Growing shared prosperity.</p>
-          <Link className="font-medium text-leaf-700 hover:text-leaf-800" to="/activity">
+          <p>
+            © {new Date().getFullYear()} AgroCylo. Growing shared prosperity.
+          </p>
+          <Link
+            className="font-medium text-leaf-700 hover:text-leaf-800"
+            to="/activity"
+          >
             View platform activity
           </Link>
         </div>
       </footer>
     </div>
-  )
+  );
 }

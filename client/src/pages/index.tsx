@@ -1,14 +1,19 @@
-import type { ReactNode } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import type { ReactNode } from 'react';
+import { Link, useParams } from 'react-router-dom';
 
 type PlaceholderPageProps = {
-  eyebrow: string
-  title: string
-  description: string
-  action?: ReactNode
-}
+  eyebrow: string;
+  title: string;
+  description: string;
+  action?: ReactNode;
+};
 
-function PlaceholderPage({ eyebrow, title, description, action }: PlaceholderPageProps) {
+function PlaceholderPage({
+  eyebrow,
+  title,
+  description,
+  action,
+}: PlaceholderPageProps) {
   return (
     <section className="mx-auto flex max-w-7xl items-center px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <div className="w-full rounded-campaign border border-soil-200 bg-white p-8 shadow-campaign sm:p-12">
@@ -18,11 +23,11 @@ function PlaceholderPage({ eyebrow, title, description, action }: PlaceholderPag
         {action && <div className="mt-8">{action}</div>}
       </div>
     </section>
-  )
+  );
 }
 
 const primaryLinkClass =
-  'inline-flex rounded-lg bg-leaf-700 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-leaf-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500 focus-visible:ring-offset-2'
+  'inline-flex rounded-lg bg-leaf-700 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-leaf-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-leaf-500 focus-visible:ring-offset-2';
 
 export function HomePage() {
   return (
@@ -36,7 +41,7 @@ export function HomePage() {
         </Link>
       }
     />
-  )
+  );
 }
 
 export function CampaignsPage() {
@@ -51,11 +56,11 @@ export function CampaignsPage() {
         </Link>
       }
     />
-  )
+  );
 }
 
 export function CampaignDetailPage() {
-  const { campaignId } = useParams()
+  const { campaignId } = useParams();
 
   return (
     <PlaceholderPage
@@ -68,7 +73,7 @@ export function CampaignDetailPage() {
         </Link>
       }
     />
-  )
+  );
 }
 
 export function CreateCampaignPage() {
@@ -78,7 +83,7 @@ export function CreateCampaignPage() {
       title="Create a campaign"
       description="Tell investors about your farm, funding goal, timeline, and expected harvest."
     />
-  )
+  );
 }
 
 export function FarmerDashboardPage() {
@@ -88,7 +93,7 @@ export function FarmerDashboardPage() {
       title="Farmer dashboard"
       description="Manage your campaigns, report milestones, and track funding from one place."
     />
-  )
+  );
 }
 
 export function InvestorDashboardPage() {
@@ -98,7 +103,7 @@ export function InvestorDashboardPage() {
       title="Investor dashboard"
       description="Monitor your agricultural investments, campaign progress, and returns."
     />
-  )
+  );
 }
 
 export function AdminDashboardPage() {
@@ -108,7 +113,7 @@ export function AdminDashboardPage() {
       title="Admin dashboard"
       description="Review platform activity, campaign verification, disputes, and system health."
     />
-  )
+  );
 }
 
 export function ActivityFeedPage() {
@@ -118,7 +123,7 @@ export function ActivityFeedPage() {
       title="Activity feed"
       description="Follow the latest campaign, funding, milestone, and settlement events."
     />
-  )
+  );
 }
 
 export function ProfilePage() {
@@ -128,7 +133,7 @@ export function ProfilePage() {
       title="Profile"
       description="Manage your personal details, wallet preferences, and platform settings."
     />
-  )
+  );
 }
 
 export function NotFoundPage() {
@@ -143,5 +148,5 @@ export function NotFoundPage() {
         </Link>
       }
     />
-  )
+  );
 }
