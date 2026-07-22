@@ -77,7 +77,7 @@ export function AppLayout() {
   const location = useLocation();
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- close the mobile nav when the route changes; menuOpen is local UI state, not derived data.
     setMenuOpen(false);
   }, [location.pathname]);
 
