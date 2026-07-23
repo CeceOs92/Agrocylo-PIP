@@ -231,8 +231,8 @@ impl ProductionEscrowContract {
         if is_terminal(&campaign.status) {
             panic!("cannot release tranche: campaign is in a terminal state");
         }
-        if campaign.status != CampaignStatus::Funded {
-            panic!("campaign not funded");
+        if campaign.status != CampaignStatus::Funded && campaign.status != CampaignStatus::InProduction {
+            panic!("campaign not funded or in production");
         }
         if amount > escrow_held(&campaign) {
             panic!("amount exceeds escrow balance");
@@ -260,6 +260,9 @@ impl ProductionEscrowContract {
             storage::set_tranches(&env, campaign_id, &tranches);
         }
 
+        if campaign.status == CampaignStatus::Funded {
+            campaign.status = CampaignStatus::InProduction;
+        }
         campaign.released += amount;
         storage::set_campaign(&env, campaign_id, &campaign);
         storage::extend_instance_ttl(&env);
@@ -278,8 +281,8 @@ impl ProductionEscrowContract {
         }
         farmer.require_auth();
 
-        if campaign.status != CampaignStatus::Funded {
-            panic!("campaign not funded");
+        if campaign.status != CampaignStatus::Funded && campaign.status != CampaignStatus::InProduction {
+            panic!("campaign not funded or in production");
         }
 
         let record = HarvestRecord {
@@ -302,6 +305,7 @@ impl ProductionEscrowContract {
         if campaign.status != CampaignStatus::Active
             && campaign.status != CampaignStatus::Funding
             && campaign.status != CampaignStatus::Funded
+            && campaign.status != CampaignStatus::InProduction
         {
             panic!("campaign not disputable");
         }
@@ -482,6 +486,7 @@ impl ProductionEscrowContract {
         if campaign.status != CampaignStatus::Active
             && campaign.status != CampaignStatus::Funding
             && campaign.status != CampaignStatus::Funded
+            && campaign.status != CampaignStatus::InProduction
         {
             panic!("campaign cannot be marked failed in its current state");
         }

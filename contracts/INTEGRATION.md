@@ -73,15 +73,16 @@ The logical lifecycle maps to the contract statuses as follows:
 
 | Logical Phase | Contract Status | Triggering Escrow Method |
 |---------------|-----------------|--------------------------|
-| **Funding** | `Active` | `create_campaign` |
+| **Funding** | `Active` / `Funding` | `create_campaign` (Active), first contribution (Funding) |
 | **Funded** | `Funded` | `fund_campaign` when target is reached, or admin `complete_funding` after authorized reconciliation |
-| **InProduction** | `Funded` | `release_tranche` (one or more calls) |
-| **Harvested** | `Funded` | `report_harvest` |
+| **InProduction** | `InProduction` | `release_tranche` (first call transitions to `InProduction`) |
+| **Harvested** | `Harvested` | `report_harvest` |
 | **Settled** | `Settled` | `settle_campaign` |
-| **Disputed** | `Disputed` | `open_dispute` |
-| **Resolved** | `Resolved` | `resolve_dispute` |
 
-> **Note:** `Failed` is not a distinct on-chain status. A campaign that never reaches its target by the deadline is considered *Failed* off-chain by the backend/indexer.
+Alternative terminal statuses:
+- **Failed**: Contract Status `Failed`, triggered by admin `mark_failed`
+- **Disputed**: Contract Status `Disputed`, triggered by `open_dispute`
+- **Resolved**: Contract Status `Resolved`, triggered by admin `resolve_dispute`
 
 ### Lifecycle Diagram
 
@@ -89,22 +90,18 @@ The logical lifecycle maps to the contract statuses as follows:
 [Funding / Active]
        |
        v
-[Funded] <-----------------------+
-   |                             |
-   |--[release_tranche]--> [InProduction]
-   |                             |
-   |--[report_harvest] ---> [Harvested]
-   |                             |
-   v                             |
-[Settled]                       |
-   |                             |
-   | (alternative paths)         |
-   |                             |
-   +--[open_dispute] --------> [Disputed]
-   |                             |
-   |<--[resolve_dispute] ---- [Resolved]
-   |                             |
-   +--[claim_refund] --------> [RefundClaimed]*
+[Funded] --[release_tranche (first call)]--> [InProduction]
+   |                                               |
+   |                                               |--[release_tranche (subsequent)]
+   |                                               v
+   +--------------[report_harvest]-------------> [Harvested]
+                                                   |
+                                                   v
+                                               [Settled]
+
+Alternative Paths:
+- [Active / Funding / Funded / InProduction] --[open_dispute]--> [Disputed] --[resolve_dispute]--> [Resolved] --[claim_refund]--> [RefundClaimed]*
+- [Active / Funding / Funded / InProduction] --[mark_failed]--> [Failed] --[claim_refund]--> [RefundClaimed]*
 ```
 
 \* `RefundClaimed` is a per-investor action, not a global campaign status transition.

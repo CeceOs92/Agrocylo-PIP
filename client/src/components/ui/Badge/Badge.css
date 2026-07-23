@@ -69,6 +69,12 @@
   border-color: hsla(142, 70%, 45%, 0.25);
 }
 
+.ui-badge--status-inproduction {
+  background-color: hsla(180, 80%, 45%, 0.1);
+  color: hsl(180, 80%, 35%);
+  border-color: hsla(180, 80%, 45%, 0.25);
+}
+
 .ui-badge--status-harvested {
   background-color: hsla(162, 75%, 40%, 0.1);
   color: hsl(162, 75%, 30%);

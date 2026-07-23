@@ -500,6 +500,7 @@ fn test_release_tranche_updates_accounting() {
     assert_eq!(campaign.released, 300);
     // escrow_held = 1000 - 300 - 0 = 700
     assert_eq!(campaign.total_funded - campaign.released - campaign.refundable, 700);
+    assert_eq!(campaign.status, CampaignStatus::InProduction);
 }
 
 #[test]
@@ -1374,4 +1375,28 @@ fn test_claim_return_truncation_dust_remains_in_contract() {
 
     // Same as refund case: 333 + 332 + 332 = 997, dust = 3 stroops.
     assert_eq!(total_claimed, 997);
+}
+
+#[test]
+fn test_open_dispute_in_production() {
+    let s = funded_campaign();
+    s.client.release_tranche(&s.campaign_id, &s.farmer, &300i128);
+    assert_eq!(s.client.get_campaign(&s.campaign_id).status, CampaignStatus::InProduction);
+
+    s.client.open_dispute(
+        &s.campaign_id,
+        &s.investor1,
+        &Symbol::new(&s.env, "Delay"),
+    );
+    assert_eq!(s.client.get_campaign(&s.campaign_id).status, CampaignStatus::Disputed);
+}
+
+#[test]
+fn test_mark_failed_in_production() {
+    let s = token_funded_campaign();
+    s.client.release_tranche(&s.campaign_id, &s.farmer, &300i128);
+    assert_eq!(s.client.get_campaign(&s.campaign_id).status, CampaignStatus::InProduction);
+
+    s.client.mark_failed(&s.campaign_id);
+    assert_eq!(s.client.get_campaign(&s.campaign_id).status, CampaignStatus::Failed);
 }
