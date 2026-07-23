@@ -1,0 +1,111 @@
+.ui-tooltip-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.ui-tooltip-bubble {
+  position: absolute;
+  background-color: hsl(220, 15%, 15%);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  z-index: 1100;
+  width: max-content;
+  max-width: 200px;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  pointer-events: none;
+  animation: ui-tooltip-fade-in 0.15s ease-out;
+}
+
+/* Arrow indicator styles */
+.ui-tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-color: transparent;
+}
+
+/* Placements */
+
+/* Top */
+.ui-tooltip-bubble--top {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+}
+
+.ui-tooltip-bubble--top .ui-tooltip-arrow {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px 5px 0 5px;
+  border-top-color: hsl(220, 15%, 15%);
+}
+
+/* Bottom */
+.ui-tooltip-bubble--bottom {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 0.5rem;
+}
+
+.ui-tooltip-bubble--bottom .ui-tooltip-arrow {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 5px 5px 5px;
+  border-bottom-color: hsl(220, 15%, 15%);
+}
+
+/* Left */
+.ui-tooltip-bubble--left {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-right: 0.5rem;
+}
+
+.ui-tooltip-bubble--left .ui-tooltip-arrow {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 5px 0 5px 5px;
+  border-left-color: hsl(220, 15%, 15%);
+}
+
+/* Right */
+.ui-tooltip-bubble--right {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0.5rem;
+}
+
+.ui-tooltip-bubble--right .ui-tooltip-arrow {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 5px 5px 5px 0;
+  border-right-color: hsl(220, 15%, 15%);
+}
+
+@keyframes ui-tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--tw-translate-x, 0), var(--tw-translate-y, 0))
+      scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(var(--tw-translate-x, 0), var(--tw-translate-y, 0))
+      scale(1);
+  }
+}

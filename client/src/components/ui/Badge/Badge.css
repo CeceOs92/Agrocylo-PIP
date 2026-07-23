@@ -1,0 +1,106 @@
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  line-height: 1;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  user-select: none;
+}
+
+/* Generic Variants */
+.ui-badge--variant-default {
+  background-color: hsla(220, 85%, 57%, 0.1);
+  color: hsl(220, 85%, 50%);
+  border-color: hsla(220, 85%, 57%, 0.2);
+}
+
+.ui-badge--variant-success {
+  background-color: hsla(142, 70%, 45%, 0.1);
+  color: hsl(142, 70%, 35%);
+  border-color: hsla(142, 70%, 45%, 0.2);
+}
+
+.ui-badge--variant-warning {
+  background-color: hsla(38, 92%, 48%, 0.1);
+  color: hsl(38, 92%, 38%);
+  border-color: hsla(38, 92%, 48%, 0.2);
+}
+
+.ui-badge--variant-error {
+  background-color: hsla(355, 85%, 55%, 0.1);
+  color: hsl(355, 85%, 45%);
+  border-color: hsla(355, 85%, 55%, 0.2);
+}
+
+.ui-badge--variant-info {
+  background-color: hsla(190, 90%, 40%, 0.1);
+  color: hsl(190, 90%, 32%);
+  border-color: hsla(190, 90%, 40%, 0.2);
+}
+
+.ui-badge--variant-neutral {
+  background-color: hsla(220, 15%, 50%, 0.1);
+  color: hsl(220, 15%, 35%);
+  border-color: hsla(220, 15%, 50%, 0.2);
+}
+
+/* CampaignStatus Specific Status Badges */
+.ui-badge--status-active {
+  background-color: hsla(190, 90%, 40%, 0.1);
+  color: hsl(190, 90%, 32%);
+  border-color: hsla(190, 90%, 40%, 0.25);
+}
+
+.ui-badge--status-funding {
+  background-color: hsla(262, 80%, 50%, 0.1);
+  color: hsl(262, 80%, 45%);
+  border-color: hsla(262, 80%, 50%, 0.25);
+}
+
+.ui-badge--status-funded {
+  background-color: hsla(142, 70%, 45%, 0.1);
+  color: hsl(142, 70%, 35%);
+  border-color: hsla(142, 70%, 45%, 0.25);
+}
+
+.ui-badge--status-inproduction {
+  background-color: hsla(180, 80%, 45%, 0.1);
+  color: hsl(180, 80%, 35%);
+  border-color: hsla(180, 80%, 45%, 0.25);
+}
+
+.ui-badge--status-harvested {
+  background-color: hsla(162, 75%, 40%, 0.1);
+  color: hsl(162, 75%, 30%);
+  border-color: hsla(162, 75%, 40%, 0.25);
+}
+
+.ui-badge--status-disputed {
+  background-color: hsla(38, 92%, 48%, 0.1);
+  color: hsl(38, 92%, 38%);
+  border-color: hsla(38, 92%, 48%, 0.25);
+}
+
+.ui-badge--status-resolved {
+  background-color: hsla(174, 85%, 40%, 0.1);
+  color: hsl(174, 85%, 30%);
+  border-color: hsla(174, 85%, 40%, 0.25);
+}
+
+.ui-badge--status-settled {
+  background-color: hsla(220, 15%, 50%, 0.1);
+  color: hsl(220, 15%, 35%);
+  border-color: hsla(220, 15%, 50%, 0.25);
+}
+
+.ui-badge--status-failed {
+  background-color: hsla(355, 85%, 55%, 0.1);
+  color: hsl(355, 85%, 45%);
+  border-color: hsla(355, 85%, 55%, 0.25);
+}

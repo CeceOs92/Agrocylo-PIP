@@ -1,0 +1,76 @@
+.ui-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  font-family: inherit;
+}
+
+.ui-input-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(220, 15%, 25%);
+  user-select: none;
+}
+
+.ui-input-required-star {
+  color: hsl(355, 85%, 55%);
+}
+
+.ui-input-field {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid hsl(220, 15%, 80%);
+  background-color: #ffffff;
+  color: hsl(220, 15%, 15%);
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.ui-input-field:hover:not(:disabled) {
+  border-color: hsl(220, 15%, 65%);
+}
+
+.ui-input-field:focus {
+  border-color: hsl(220, 85%, 57%);
+  box-shadow: 0 0 0 3px hsla(220, 85%, 57%, 0.2);
+}
+
+.ui-input-field:disabled {
+  background-color: hsl(220, 15%, 96%);
+  color: hsl(220, 15%, 60%);
+  border-color: hsl(220, 15%, 90%);
+  cursor: not-allowed;
+}
+
+/* Error State */
+.ui-input-field--error {
+  border-color: hsl(355, 85%, 55%);
+}
+
+.ui-input-field--error:focus {
+  border-color: hsl(355, 85%, 55%);
+  box-shadow: 0 0 0 3px hsla(355, 85%, 55%, 0.2);
+}
+
+.ui-input-error-msg {
+  font-size: 0.75rem;
+  color: hsl(355, 85%, 55%);
+  margin: 0;
+}
+
+.ui-input-helper-msg {
+  font-size: 0.75rem;
+  color: hsl(220, 15%, 55%);
+  margin: 0;
+}
+
+.ui-input-container--disabled .ui-input-label {
+  color: hsl(220, 15%, 60%);
+}

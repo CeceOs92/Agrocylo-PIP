@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+
+export { CampaignDetailPage } from './CampaignDetailPage';
+export { CreateCampaignPage } from './CreateCampaignPage';
 
 type PlaceholderPageProps = {
   eyebrow: string;
@@ -55,33 +58,6 @@ export function CampaignsPage() {
           Create a campaign
         </Link>
       }
-    />
-  );
-}
-
-export function CampaignDetailPage() {
-  const { campaignId } = useParams();
-
-  return (
-    <PlaceholderPage
-      eyebrow="Campaign detail"
-      title={`Campaign ${campaignId ?? ''}`}
-      description="Review this campaign's funding progress, farm details, milestones, and on-chain activity."
-      action={
-        <Link to="/campaigns" className={primaryLinkClass}>
-          Back to campaigns
-        </Link>
-      }
-    />
-  );
-}
-
-export function CreateCampaignPage() {
-  return (
-    <PlaceholderPage
-      eyebrow="For farmers"
-      title="Create a campaign"
-      description="Tell investors about your farm, funding goal, timeline, and expected harvest."
     />
   );
 }

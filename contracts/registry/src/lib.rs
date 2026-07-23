@@ -10,7 +10,7 @@ mod types;
 
 pub use types::*;
 
-use soroban_sdk::{contract, contractimpl, Address, Env, String, Vec};
+use soroban_sdk::{contract, contractimpl, Address, Env, String, Symbol, Vec};
 
 #[contract]
 pub struct RegistryContract;
@@ -76,7 +76,10 @@ impl RegistryContract {
         activity::get_campaign_activities(&env, campaign_id)
     }
 
-    pub fn register_campaign(
+    /// Links a campaign to its ProductionEscrowContract instance and crop/region
+    /// metadata, and begins tracking its lifecycle status. Distinct from
+    /// `register_campaign`, which stores the farmer-authored title/description.
+    pub fn link_campaign_escrow(
         env: Env,
         campaign_id: u64,
         farmer: Address,
@@ -84,7 +87,7 @@ impl RegistryContract {
         crop_metadata: Symbol,
         region_metadata: Symbol,
     ) {
-        campaign::register_campaign(
+        campaign::link_campaign_escrow(
             &env,
             campaign_id,
             &farmer,
@@ -103,8 +106,8 @@ impl RegistryContract {
         campaign::update_campaign_status(&env, campaign_id, &caller, new_status);
     }
 
-    pub fn get_campaign(env: Env, campaign_id: u64) -> CampaignRecord {
-        campaign::get_campaign(&env, campaign_id)
+    pub fn get_campaign_record(env: Env, campaign_id: u64) -> CampaignRecord {
+        campaign::get_campaign_record(&env, campaign_id)
     }
 
     pub fn get_campaigns_by_farmer(env: Env, farmer: Address) -> Vec<u64> {

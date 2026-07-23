@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, String};
+use soroban_sdk::{contracttype, Address, String, Symbol};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -33,6 +33,8 @@ pub struct FarmerProfile {
     pub registration_time: u64,
 }
 
+/// Descriptive campaign metadata registered by the farmer (title/description).
+/// See `CampaignRecord` for the escrow-linked record with lifecycle status.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CampaignInfo {
@@ -45,6 +47,32 @@ pub struct CampaignInfo {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub enum CampaignStatus {
+    Active,
+    Funding,
+    Funded,
+    InProduction,
+    Disputed,
+    Resolved,
+    Settled,
+}
+
+/// Links a campaign to its ProductionEscrowContract instance and crop/region
+/// metadata, and tracks lifecycle status as it's mirrored over from the
+/// escrow contract via `update_campaign_status`.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CampaignRecord {
+    pub campaign_id: u64,
+    pub farmer: Address,
+    pub escrow_contract: Address,
+    pub crop_metadata: Symbol,
+    pub region_metadata: Symbol,
+    pub status: CampaignStatus,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DataKey {
     Admin,
     ApprovedContract(Address),
@@ -53,4 +81,6 @@ pub enum DataKey {
     Campaign(u64),
     FarmerCount,
     CampaignCount,
+    CampaignRecord(u64),
+    FarmerCampaigns(Address),
 }

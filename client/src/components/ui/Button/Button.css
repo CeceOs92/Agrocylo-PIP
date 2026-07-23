@@ -1,0 +1,133 @@
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.1s ease;
+  user-select: none;
+  text-decoration: none;
+  outline: none;
+  position: relative;
+  gap: 0.5rem;
+}
+
+.ui-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.ui-button:focus-visible {
+  box-shadow: 0 0 0 3px hsla(220, 85%, 57%, 0.4);
+}
+
+.ui-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Sizes */
+.ui-button--sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.875rem;
+  height: 2rem;
+}
+
+.ui-button--md {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.95rem;
+  height: 2.5rem;
+}
+
+.ui-button--lg {
+  padding: 0.75rem 1.75rem;
+  font-size: 1.05rem;
+  height: 3rem;
+}
+
+/* Primary */
+.ui-button--primary {
+  background-color: hsl(220, 85%, 57%);
+  color: #ffffff;
+}
+
+.ui-button--primary:hover:not(:disabled) {
+  background-color: hsl(220, 85%, 50%);
+}
+
+.ui-button--primary:focus-visible {
+  box-shadow: 0 0 0 3px hsla(220, 85%, 57%, 0.4);
+}
+
+/* Secondary */
+.ui-button--secondary {
+  background-color: hsl(262, 80%, 50%);
+  color: #ffffff;
+}
+
+.ui-button--secondary:hover:not(:disabled) {
+  background-color: hsl(262, 80%, 45%);
+}
+
+.ui-button--secondary:focus-visible {
+  box-shadow: 0 0 0 3px hsla(262, 80%, 50%, 0.4);
+}
+
+/* Outline */
+.ui-button--outline {
+  background-color: transparent;
+  border-color: hsl(220, 15%, 80%);
+  color: hsl(220, 15%, 25%);
+}
+
+.ui-button--outline:hover:not(:disabled) {
+  background-color: hsla(220, 15%, 80%, 0.1);
+  border-color: hsl(220, 15%, 65%);
+}
+
+/* Danger */
+.ui-button--danger {
+  background-color: hsl(355, 85%, 55%);
+  color: #ffffff;
+}
+
+.ui-button--danger:hover:not(:disabled) {
+  background-color: hsl(355, 85%, 48%);
+}
+
+.ui-button--danger:focus-visible {
+  box-shadow: 0 0 0 3px hsla(355, 85%, 55%, 0.4);
+}
+
+/* Ghost */
+.ui-button--ghost {
+  background-color: transparent;
+  color: hsl(220, 15%, 35%);
+}
+
+.ui-button--ghost:hover:not(:disabled) {
+  background-color: hsla(220, 15%, 80%, 0.15);
+  color: hsl(220, 15%, 15%);
+}
+
+/* Loading helper margins */
+.ui-button__spinner {
+  margin-right: 0.25rem;
+}
+
+.ui-button__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-button__text {
+  display: inline-block;
+  line-height: 1;
+}

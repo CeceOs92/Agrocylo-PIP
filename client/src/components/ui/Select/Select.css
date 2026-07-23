@@ -1,0 +1,106 @@
+.ui-select-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  font-family: inherit;
+}
+
+.ui-select-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(220, 15%, 25%);
+  user-select: none;
+}
+
+.ui-select-required-star {
+  color: hsl(355, 85%, 55%);
+}
+
+.ui-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.ui-select-field {
+  width: 100%;
+  padding: 0.6rem 2.2rem 0.6rem 0.8rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid hsl(220, 15%, 80%);
+  background-color: #ffffff;
+  color: hsl(220, 15%, 15%);
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+}
+
+.ui-select-field:hover:not(:disabled) {
+  border-color: hsl(220, 15%, 65%);
+}
+
+.ui-select-field:focus {
+  border-color: hsl(220, 85%, 57%);
+  box-shadow: 0 0 0 3px hsla(220, 85%, 57%, 0.2);
+}
+
+.ui-select-field:disabled {
+  background-color: hsl(220, 15%, 96%);
+  color: hsl(220, 15%, 60%);
+  border-color: hsl(220, 15%, 90%);
+  cursor: not-allowed;
+}
+
+.ui-select-field--placeholder {
+  color: hsl(220, 15%, 60%);
+}
+
+/* Arrow Overlay */
+.ui-select-arrow {
+  position: absolute;
+  top: 50%;
+  right: 0.8rem;
+  transform: translateY(-50%);
+  color: hsl(220, 15%, 55%);
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-select-container--disabled .ui-select-arrow {
+  color: hsl(220, 15%, 70%);
+}
+
+/* Error State */
+.ui-select-field--error {
+  border-color: hsl(355, 85%, 55%);
+}
+
+.ui-select-field--error:focus {
+  border-color: hsl(355, 85%, 55%);
+  box-shadow: 0 0 0 3px hsla(355, 85%, 55%, 0.2);
+}
+
+.ui-select-error-msg {
+  font-size: 0.75rem;
+  color: hsl(355, 85%, 55%);
+  margin: 0;
+}
+
+.ui-select-helper-msg {
+  font-size: 0.75rem;
+  color: hsl(220, 15%, 55%);
+  margin: 0;
+}
+
+.ui-select-container--disabled .ui-select-label {
+  color: hsl(220, 15%, 60%);
+}

@@ -1,5 +1,5 @@
-use crate::types::{CampaignInfo, DataKey, FarmerProfile};
-use soroban_sdk::{Address, Env};
+use crate::types::{CampaignInfo, CampaignRecord, DataKey, FarmerProfile};
+use soroban_sdk::{Address, Env, Vec};
 
 const DAY_IN_LEDGERS: u32 = 17280;
 const INSTANCE_LIFETIME_THRESHOLD: u32 = DAY_IN_LEDGERS * 30;
@@ -74,5 +74,43 @@ pub fn get_campaign(env: &Env, campaign_id: u64) -> Option<CampaignInfo> {
 pub fn set_campaign(env: &Env, campaign: &CampaignInfo) {
     let key = DataKey::Campaign(campaign.id);
     env.storage().persistent().set(&key, campaign);
+    extend_persistent_ttl(env, &key);
+}
+
+pub fn has_campaign_record(env: &Env, campaign_id: u64) -> bool {
+    let key = DataKey::CampaignRecord(campaign_id);
+    env.storage().persistent().has(&key)
+}
+
+pub fn get_campaign_record(env: &Env, campaign_id: u64) -> CampaignRecord {
+    let key = DataKey::CampaignRecord(campaign_id);
+    let record = env
+        .storage()
+        .persistent()
+        .get(&key)
+        .expect("campaign not found");
+    extend_persistent_ttl(env, &key);
+    record
+}
+
+pub fn set_campaign_record(env: &Env, campaign_id: u64, record: &CampaignRecord) {
+    let key = DataKey::CampaignRecord(campaign_id);
+    env.storage().persistent().set(&key, record);
+    extend_persistent_ttl(env, &key);
+}
+
+pub fn get_farmer_campaigns(env: &Env, farmer: &Address) -> Vec<u64> {
+    let key = DataKey::FarmerCampaigns(farmer.clone());
+    env.storage()
+        .persistent()
+        .get(&key)
+        .unwrap_or(Vec::new(env))
+}
+
+pub fn add_farmer_campaign(env: &Env, farmer: &Address, campaign_id: u64) {
+    let key = DataKey::FarmerCampaigns(farmer.clone());
+    let mut campaigns = get_farmer_campaigns(env, farmer);
+    campaigns.push_back(campaign_id);
+    env.storage().persistent().set(&key, &campaigns);
     extend_persistent_ttl(env, &key);
 }

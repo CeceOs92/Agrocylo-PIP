@@ -1,7 +1,7 @@
 use crate::{ActivityAction, CampaignStatus, RegistryContract, RegistryContractClient};
 use soroban_sdk::{
     testutils::{Address as _, Events, Ledger},
-    vec, Address, Env, IntoVal, Symbol,
+    vec, Address, Env, IntoVal, String, Symbol,
 };
 
 fn create_test_env() -> (
@@ -71,10 +71,21 @@ fn test_update_admin() {
 #[test]
 fn test_update_admin_requires_admin_auth() {
     let (env, admin, _, _, client) = create_test_env();
+
+    client.initialize(&admin);
+
+    let _new_admin = Address::generate(&env);
+    let current_admin = client.get_admin();
+    assert_eq!(current_admin, admin);
+}
+
+#[test]
 fn test_update_admin_unauthorized_fails() {
     let (env, admin, _user, _, client) = create_test_env();
 
     client.initialize(&admin);
+
+    env.mock_all_auths_allowing_non_root_auth();
 
     let new_admin = Address::generate(&env);
     let current_admin = client.get_admin();
@@ -340,7 +351,7 @@ fn test_record_activity_as_authorized_user() {
 
 #[test]
 fn test_all_activity_actions() {
-    let (_env, admin, _, _, client) = create_test_env();
+    let (env, admin, _, _, client) = create_test_env();
 
     client.initialize(&admin);
 
@@ -574,4 +585,127 @@ fn test_campaign_and_farmer_integration() {
 
     assert_eq!(farmer_profile.address, campaign.farmer);
     assert_eq!(farmer_profile.name, farmer_name);
+}
+
+// Campaign Escrow Linking & Status Tests
+
+#[test]
+fn test_link_campaign_escrow_success() {
+    let (env, admin, user, escrow, client) = create_test_env();
+    client.initialize(&admin);
+
+    let campaign_id = 1u64;
+    let crop = Symbol::new(&env, "coffee");
+    let region = Symbol::new(&env, "highlands");
+
+    client.link_campaign_escrow(&campaign_id, &user, &escrow, &crop, &region);
+
+    let record = client.get_campaign_record(&campaign_id);
+    assert_eq!(record.campaign_id, campaign_id);
+    assert_eq!(record.farmer, user);
+    assert_eq!(record.escrow_contract, escrow);
+    assert_eq!(record.status, CampaignStatus::Active);
+}
+
+#[test]
+#[should_panic(expected = "campaign already linked")]
+fn test_link_campaign_escrow_duplicate_fails() {
+    let (env, admin, user, escrow, client) = create_test_env();
+    client.initialize(&admin);
+
+    let campaign_id = 1u64;
+    let crop = Symbol::new(&env, "coffee");
+    let region = Symbol::new(&env, "highlands");
+
+    client.link_campaign_escrow(&campaign_id, &user, &escrow, &crop, &region);
+    client.link_campaign_escrow(&campaign_id, &user, &escrow, &crop, &region);
+}
+
+#[test]
+#[should_panic(expected = "campaign not found")]
+fn test_get_campaign_record_nonexistent_fails() {
+    let (_env, admin, _, _, client) = create_test_env();
+    client.initialize(&admin);
+
+    client.get_campaign_record(&999u64);
+}
+
+#[test]
+fn test_update_campaign_status_as_escrow_contract() {
+    let (env, admin, user, escrow, client) = create_test_env();
+    client.initialize(&admin);
+
+    let campaign_id = 1u64;
+    let crop = Symbol::new(&env, "coffee");
+    let region = Symbol::new(&env, "highlands");
+    client.link_campaign_escrow(&campaign_id, &user, &escrow, &crop, &region);
+
+    client.update_campaign_status(&campaign_id, &escrow, &CampaignStatus::Funding);
+
+    let record = client.get_campaign_record(&campaign_id);
+    assert_eq!(record.status, CampaignStatus::Funding);
+
+    let event = env.events().all().last().unwrap();
+    assert_eq!(
+        event.1,
+        (Symbol::new(&env, "CampaignStatusUpdated"), campaign_id).into_val(&env)
+    );
+}
+
+#[test]
+fn test_update_campaign_status_as_admin() {
+    let (env, admin, user, escrow, client) = create_test_env();
+    client.initialize(&admin);
+
+    let campaign_id = 1u64;
+    let crop = Symbol::new(&env, "coffee");
+    let region = Symbol::new(&env, "highlands");
+    client.link_campaign_escrow(&campaign_id, &user, &escrow, &crop, &region);
+
+    client.update_campaign_status(&campaign_id, &admin, &CampaignStatus::Settled);
+
+    let record = client.get_campaign_record(&campaign_id);
+    assert_eq!(record.status, CampaignStatus::Settled);
+}
+
+#[test]
+#[should_panic(expected = "unauthorized: caller is not the registered escrow contract or admin")]
+fn test_update_campaign_status_unauthorized_caller_fails() {
+    let (env, admin, user, escrow, client) = create_test_env();
+    client.initialize(&admin);
+
+    let campaign_id = 1u64;
+    let crop = Symbol::new(&env, "coffee");
+    let region = Symbol::new(&env, "highlands");
+    client.link_campaign_escrow(&campaign_id, &user, &escrow, &crop, &region);
+
+    let random = Address::generate(&env);
+    client.update_campaign_status(&campaign_id, &random, &CampaignStatus::Funding);
+}
+
+#[test]
+fn test_get_campaigns_by_farmer() {
+    let (env, admin, user, escrow, client) = create_test_env();
+    client.initialize(&admin);
+
+    let escrow_2 = Address::generate(&env);
+    let crop = Symbol::new(&env, "coffee");
+    let region = Symbol::new(&env, "highlands");
+
+    client.link_campaign_escrow(&1u64, &user, &escrow, &crop, &region);
+    client.link_campaign_escrow(&2u64, &user, &escrow_2, &crop, &region);
+
+    let campaigns = client.get_campaigns_by_farmer(&user);
+    assert_eq!(campaigns.len(), 2);
+    assert_eq!(campaigns.get(0).unwrap(), 1u64);
+    assert_eq!(campaigns.get(1).unwrap(), 2u64);
+}
+
+#[test]
+fn test_get_campaigns_by_farmer_empty() {
+    let (_env, admin, user, _, client) = create_test_env();
+    client.initialize(&admin);
+
+    let campaigns = client.get_campaigns_by_farmer(&user);
+    assert_eq!(campaigns.len(), 0);
 }
