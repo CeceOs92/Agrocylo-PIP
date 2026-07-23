@@ -1,21 +1,21 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   getInvestorPortfolio,
   calculatePortfolioStats,
   claimRefund,
   claimReturn,
   type FundedInvestment,
-} from "../lib/soroban/investorService";
-import { InvestorSummaryStats } from "../components/investor/InvestorSummaryStats";
-import { InvestmentCard } from "../components/investor/InvestmentCard";
+} from '../lib/soroban/investorService';
+import { InvestorSummaryStats } from '../components/investor/InvestorSummaryStats';
+import { InvestmentCard } from '../components/investor/InvestmentCard';
 
 export const InvestorDashboardPage: React.FC = () => {
-  const [walletAddress] = useState<string>("GDF4...M9XZ");
+  const [walletAddress] = useState<string>('GDF4...M9XZ');
   const [investments, setInvestments] = useState<FundedInvestment[]>(() =>
-    getInvestorPortfolio(walletAddress)
+    getInvestorPortfolio(walletAddress),
   );
   const [notification, setNotification] = useState<{
-    type: "success" | "error";
+    type: 'success' | 'error';
     message: string;
     txHash?: string;
   } | null>(null);
@@ -27,15 +27,18 @@ export const InvestorDashboardPage: React.FC = () => {
     const res = await claimRefund(campaignId, walletAddress);
 
     if (!res.success) {
-      setNotification({ type: "error", message: res.error || "Failed to claim refund" });
+      setNotification({
+        type: 'error',
+        message: res.error || 'Failed to claim refund',
+      });
     } else {
       setInvestments((prev) =>
         prev.map((inv) =>
-          inv.campaignId === campaignId ? { ...inv, claimed: true } : inv
-        )
+          inv.campaignId === campaignId ? { ...inv, claimed: true } : inv,
+        ),
       );
       setNotification({
-        type: "success",
+        type: 'success',
         message: `Successfully claimed refund of $${res.claimedAmount?.toLocaleString()}!`,
         txHash: res.txHash,
       });
@@ -47,15 +50,18 @@ export const InvestorDashboardPage: React.FC = () => {
     const res = await claimReturn(campaignId, walletAddress);
 
     if (!res.success) {
-      setNotification({ type: "error", message: res.error || "Failed to claim return" });
+      setNotification({
+        type: 'error',
+        message: res.error || 'Failed to claim return',
+      });
     } else {
       setInvestments((prev) =>
         prev.map((inv) =>
-          inv.campaignId === campaignId ? { ...inv, claimed: true } : inv
-        )
+          inv.campaignId === campaignId ? { ...inv, claimed: true } : inv,
+        ),
       );
       setNotification({
-        type: "success",
+        type: 'success',
         message: `Successfully claimed return payout of $${res.claimedAmount?.toLocaleString()}!`,
         txHash: res.txHash,
       });
@@ -85,9 +91,9 @@ export const InvestorDashboardPage: React.FC = () => {
       {notification && (
         <div
           className={`p-4 rounded-xl border text-sm flex flex-col md:flex-row md:items-center justify-between gap-2 ${
-            notification.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
-              : "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800"
+            notification.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+              : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
           }`}
         >
           <span>{notification.message}</span>
@@ -118,7 +124,8 @@ export const InvestorDashboardPage: React.FC = () => {
               No Funded Investments Found
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-              You haven't contributed to any PIP campaigns yet. Browse active campaigns to start investing.
+              You haven&apos;t contributed to any PIP campaigns yet. Browse
+              active campaigns to start investing.
             </p>
           </div>
         ) : (

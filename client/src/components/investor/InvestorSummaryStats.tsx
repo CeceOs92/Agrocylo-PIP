@@ -1,5 +1,5 @@
-import React from "react";
-import type { PortfolioStats } from "../../lib/soroban/investorService";
+import React from 'react';
+import type { PortfolioStats } from '../../lib/soroban/investorService';
 
 export interface InvestorSummaryStatsProps {
   stats: PortfolioStats;

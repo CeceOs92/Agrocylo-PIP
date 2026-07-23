@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { FundCampaignModal } from "../components/campaign/FundCampaignModal";
+import React, { useState } from 'react';
+import { FundCampaignModal } from '../components/campaign/FundCampaignModal';
 
 export interface CampaignData {
   id: string;
@@ -7,25 +7,25 @@ export interface CampaignData {
   description: string;
   totalTarget: number;
   currentRaised: number;
-  status: "Active" | "Funding" | "Resolved" | "Failed" | "Settled";
+  status: 'Active' | 'Funding' | 'Resolved' | 'Failed' | 'Settled';
 }
 
 export const CampaignDetailPage: React.FC = () => {
   const [campaign, setCampaign] = useState<CampaignData>({
-    id: "camp-101",
-    title: "Organic Maize Irrigation & Harvesting PIP",
+    id: 'camp-101',
+    title: 'Organic Maize Irrigation & Harvesting PIP',
     description:
-      "Scaling sustainable maize production across 250 hectares with automated precision drip irrigation and AI-powered yield monitoring.",
+      'Scaling sustainable maize production across 250 hectares with automated precision drip irrigation and AI-powered yield monitoring.',
     totalTarget: 50000,
     currentRaised: 32500,
-    status: "Funding",
+    status: 'Funding',
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const percentage = Math.min(
     100,
-    Math.round((campaign.currentRaised / campaign.totalTarget) * 100)
+    Math.round((campaign.currentRaised / campaign.totalTarget) * 100),
   );
 
   const handleFundingSuccess = (_res: unknown, addedAmount: number) => {
@@ -42,7 +42,9 @@ export const CampaignDetailPage: React.FC = () => {
           <span className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
             {campaign.status}
           </span>
-          <span className="text-sm font-mono text-slate-400">ID: {campaign.id}</span>
+          <span className="text-sm font-mono text-slate-400">
+            ID: {campaign.id}
+          </span>
         </div>
 
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-3">
@@ -56,7 +58,7 @@ export const CampaignDetailPage: React.FC = () => {
         <div className="mt-6 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="font-semibold text-slate-900 dark:text-white">
-              ${campaign.currentRaised.toLocaleString()}{" "}
+              ${campaign.currentRaised.toLocaleString()}{' '}
               <span className="text-slate-400 font-normal">raised</span>
             </span>
             <span className="text-slate-500 font-medium">

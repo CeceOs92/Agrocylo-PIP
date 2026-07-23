@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   validateContribution,
   calculateOwnershipShare,
   fundCampaign,
   type FundCampaignResult,
-} from "../../lib/soroban/campaignService";
+} from '../../lib/soroban/campaignService';
 
 export interface FundCampaignModalProps {
   isOpen: boolean;
@@ -24,15 +24,17 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
   campaignTitle,
   totalTarget,
   currentRaised,
-  walletAddress = "GDF4...M9XZ",
+  walletAddress = 'GDF4...M9XZ',
   onSuccess,
 }) => {
   const remainingTarget = Math.max(0, totalTarget - currentRaised);
 
-  const [amount, setAmount] = useState<string>("");
+  const [amount, setAmount] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [successResult, setSuccessResult] = useState<FundCampaignResult | null>(null);
+  const [successResult, setSuccessResult] = useState<FundCampaignResult | null>(
+    null,
+  );
 
   if (!isOpen) return null;
 
@@ -51,7 +53,7 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
 
     const validation = validateContribution(numAmount, remainingTarget);
     if (!validation.valid) {
-      setError(validation.error || "Invalid contribution amount");
+      setError(validation.error || 'Invalid contribution amount');
       return;
     }
 
@@ -60,11 +62,11 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
       const res = await fundCampaign(
         { campaignId, amount: numAmount, walletAddress },
         currentRaised,
-        totalTarget
+        totalTarget,
       );
 
       if (!res.success) {
-        setError(res.error || "Failed to fund campaign");
+        setError(res.error || 'Failed to fund campaign');
       } else {
         setSuccessResult(res);
         if (onSuccess) {
@@ -72,14 +74,14 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
         }
       }
     } catch (err) {
-      setError((err as Error).message || "An unexpected error occurred");
+      setError((err as Error).message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
 
   const resetAndClose = () => {
-    setAmount("");
+    setAmount('');
     setError(null);
     setSuccessResult(null);
     onClose();
@@ -117,12 +119,18 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
               Contribution Successful!
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-300">
-              You contributed <span className="font-semibold text-emerald-600 dark:text-emerald-400">${numAmount.toLocaleString()}</span> to {campaignTitle}.
+              You contributed{' '}
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                ${numAmount.toLocaleString()}
+              </span>{' '}
+              to {campaignTitle}.
             </p>
 
             {successResult.txHash && (
               <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3 text-left">
-                <span className="text-xs text-slate-400 font-mono block">Transaction Hash</span>
+                <span className="text-xs text-slate-400 font-mono block">
+                  Transaction Hash
+                </span>
                 <span className="text-xs font-mono text-slate-700 dark:text-slate-300 break-all">
                   {successResult.txHash}
                 </span>
@@ -144,13 +152,17 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
             {/* Stats bar */}
             <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
               <div>
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">Remaining Target</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                  Remaining Target
+                </span>
                 <span className="text-sm font-semibold text-slate-900 dark:text-white">
                   ${remainingTarget.toLocaleString()}
                 </span>
               </div>
               <div>
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">Est. Share</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                  Est. Share
+                </span>
                 <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                   {estimatedShare}%
                 </span>
@@ -166,12 +178,18 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
 
             {/* Input field */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label
+                htmlFor="contribution-amount"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+              >
                 Contribution Amount (USDC)
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">
+                  $
+                </span>
                 <input
+                  id="contribution-amount"
                   type="number"
                   min="1"
                   max={remainingTarget}
@@ -216,7 +234,7 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
                 disabled={loading || remainingTarget <= 0}
                 className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold shadow-sm transition"
               >
-                {loading ? "Confirming..." : "Confirm Contribution"}
+                {loading ? 'Confirming...' : 'Confirm Contribution'}
               </button>
             </div>
           </form>
