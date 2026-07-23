@@ -162,6 +162,22 @@ fn happy_path_full_lifecycle_settlement() {
     h.fund_fully();
     assert_eq!(h.campaign().status, CampaignStatus::Funded);
 
+    // Configure tranches and release one to transition to InProduction
+    let mut tranches = soroban_sdk::Vec::new(&h.env);
+    tranches.push_back(production_escrow::Tranche {
+        amount: 200,
+        milestone: Symbol::new(&h.env, "milestone"),
+        released: false,
+    });
+    tranches.push_back(production_escrow::Tranche {
+        amount: 800,
+        milestone: Symbol::new(&h.env, "harvest"),
+        released: false,
+    });
+    h.escrow.configure_tranches(&h.campaign_id, &tranches);
+    h.escrow.release_tranche(&h.campaign_id, &h.farmer, &200i128);
+    assert_eq!(h.campaign().status, CampaignStatus::InProduction);
+
     // IN_PRODUCTION: farmer reports harvest -> Harvested
     let outcome = Symbol::new(&h.env, "good_yield");
     h.escrow
@@ -173,10 +189,10 @@ fn happy_path_full_lifecycle_settlement() {
     );
     assert_eq!(h.campaign().status, CampaignStatus::Harvested);
 
-    // SETTLED: admin settles, farmer gets 700, investors share 300 pro-rata.
+    // SETTLED: admin settles, farmer gets 500, investors share 300 pro-rata.
     let farmer_balance_before = h.token_client().balance(&h.farmer);
     h.escrow
-        .settle_campaign(&h.campaign_id, &h.farmer, &700i128);
+        .settle_campaign(&h.campaign_id, &h.farmer, &500i128);
     h.registry
         .record_activity(&h.campaign_id, &h.admin, &ActivityAction::CampaignSettled);
 

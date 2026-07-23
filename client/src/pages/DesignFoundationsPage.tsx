@@ -20,6 +20,12 @@ const STATUS_MAP = {
     text: 'text-status-funded-dark',
     border: 'border-status-funded/20',
   },
+  InProduction: {
+    bg: 'bg-status-inproduction',
+    bgLight: 'bg-status-inproduction-light',
+    text: 'text-status-inproduction-dark',
+    border: 'border-status-inproduction/20',
+  },
   Harvested: {
     bg: 'bg-status-harvested',
     bgLight: 'bg-status-harvested-light',
