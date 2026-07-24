@@ -146,6 +146,12 @@ function DesignFoundationsPage() {
         >
           View analytics dashboard →
         </Link>
+        <Link
+          to="/admin"
+          className="mt-4 inline-flex text-body-sm font-semibold text-leaf-700 hover:text-leaf-800"
+        >
+          View admin dashboard →
+        </Link>
       </header>
 
       {/* ── Typography scale ── */}
