@@ -48,6 +48,10 @@ impl ProductionEscrowContract {
         storage::extend_instance_ttl(&env);
     }
 
+    pub fn get_admin(env: Env) -> Address {
+        storage::get_admin(&env)
+    }
+
     pub fn create_campaign(
         env: Env,
         campaign_id: u64,

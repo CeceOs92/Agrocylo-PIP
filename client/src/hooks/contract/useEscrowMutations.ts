@@ -5,6 +5,7 @@ import {
   invokeContractWrite,
 } from '../../lib/soroban/contractClient';
 import { contractQueryKeys } from './queryKeys';
+import type { DisputeResolutionTag } from '../../lib/soroban/types';
 
 /**
  * Mutation hooks for ProductionEscrowContract writes. Each hook invalidates
@@ -149,6 +150,187 @@ export function useOpenDispute() {
       });
       queryClient.invalidateQueries({
         queryKey: contractQueryKeys.dispute(input.campaignId),
+      });
+    },
+  });
+}
+
+/**
+ * Admin-only mutation hooks below. Every admin action first requires the
+ * caller to be the escrow admin (see useEscrowAdmin in useEscrowQueries.ts);
+ * the contract also enforces this via `require_admin`/`.require_auth()`, so
+ * these hooks are a UX convenience, not the authorization boundary.
+ */
+
+export interface ConfigureTranchesInput {
+  campaignId: string;
+  tranches: { amount: bigint; milestone: string }[];
+}
+
+export function useConfigureTranches() {
+  const wallet = useWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: ConfigureTranchesInput) => {
+      return invokeContractWrite(
+        getEscrowClient(),
+        'configure_tranches',
+        {
+          campaign_id: BigInt(input.campaignId),
+          tranches: input.tranches.map((t) => ({
+            amount: t.amount,
+            milestone: t.milestone,
+            released: false,
+          })),
+        },
+        wallet,
+      );
+    },
+    onSuccess: (_data, input) => {
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.tranches(input.campaignId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.adminCampaignsOverview(),
+      });
+    },
+  });
+}
+
+export interface ReleaseTrancheInput {
+  campaignId: string;
+  recipient: string;
+  amount: bigint;
+}
+
+export function useReleaseTranche() {
+  const wallet = useWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: ReleaseTrancheInput) => {
+      return invokeContractWrite(
+        getEscrowClient(),
+        'release_tranche',
+        {
+          campaign_id: BigInt(input.campaignId),
+          recipient: input.recipient,
+          amount: input.amount,
+        },
+        wallet,
+      );
+    },
+    onSuccess: (_data, input) => {
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.campaign(input.campaignId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.tranches(input.campaignId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.adminCampaignsOverview(),
+      });
+    },
+  });
+}
+
+export interface ResolveDisputeInput {
+  campaignId: string;
+  resolution: DisputeResolutionTag;
+  payoutAmount: bigint;
+}
+
+export function useResolveDispute() {
+  const wallet = useWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: ResolveDisputeInput) => {
+      return invokeContractWrite(
+        getEscrowClient(),
+        'resolve_dispute',
+        {
+          campaign_id: BigInt(input.campaignId),
+          resolution: { tag: input.resolution },
+          payout_amount: input.payoutAmount,
+        },
+        wallet,
+      );
+    },
+    onSuccess: (_data, input) => {
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.campaign(input.campaignId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.dispute(input.campaignId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.adminCampaignsOverview(),
+      });
+    },
+  });
+}
+
+export interface SettleCampaignInput {
+  campaignId: string;
+  farmer: string;
+  farmerPayout: bigint;
+}
+
+export function useSettleCampaign() {
+  const wallet = useWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: SettleCampaignInput) => {
+      return invokeContractWrite(
+        getEscrowClient(),
+        'settle_campaign',
+        {
+          campaign_id: BigInt(input.campaignId),
+          farmer: input.farmer,
+          farmer_payout: input.farmerPayout,
+        },
+        wallet,
+      );
+    },
+    onSuccess: (_data, input) => {
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.campaign(input.campaignId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.adminCampaignsOverview(),
+      });
+    },
+  });
+}
+
+export interface MarkFailedInput {
+  campaignId: string;
+}
+
+export function useMarkFailed() {
+  const wallet = useWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: MarkFailedInput) => {
+      return invokeContractWrite(
+        getEscrowClient(),
+        'mark_failed',
+        {
+          campaign_id: BigInt(input.campaignId),
+        },
+        wallet,
+      );
+    },
+    onSuccess: (_data, input) => {
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.campaign(input.campaignId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: contractQueryKeys.adminCampaignsOverview(),
       });
     },
   });

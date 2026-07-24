@@ -1400,3 +1400,18 @@ fn test_mark_failed_in_production() {
     s.client.mark_failed(&s.campaign_id);
     assert_eq!(s.client.get_campaign(&s.campaign_id).status, CampaignStatus::Failed);
 }
+
+#[test]
+fn test_get_admin_returns_initialized_admin() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register_contract(None, ProductionEscrowContract);
+    let client = ProductionEscrowContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin);
+
+    let stored_admin = client.get_admin();
+    assert_eq!(stored_admin, admin);
+}
