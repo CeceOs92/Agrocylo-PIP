@@ -62,7 +62,7 @@ export const InvestmentCard: React.FC<InvestmentCardProps> = ({
           >
             {investment.status}
           </span>
-          <span className="text-xs font-mono text-slate-400">
+          <span className="text-xs font-mono text-slate-600 dark:text-slate-400">
             ID: {investment.campaignId}
           </span>
         </div>
@@ -71,7 +71,7 @@ export const InvestmentCard: React.FC<InvestmentCardProps> = ({
           {investment.title}
         </h3>
 
-        <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
+        <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
           <div>
             Contributed:{' '}
             <span className="font-semibold text-slate-900 dark:text-white">
@@ -80,7 +80,7 @@ export const InvestmentCard: React.FC<InvestmentCardProps> = ({
           </div>
           <div>
             Claimable:{' '}
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+            <span className="font-semibold text-emerald-700 dark:text-emerald-400">
               ${investment.claimableAmount.toLocaleString()}
             </span>
           </div>
@@ -89,27 +89,29 @@ export const InvestmentCard: React.FC<InvestmentCardProps> = ({
 
       <div className="flex items-center justify-end">
         {investment.claimed ? (
-          <span className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-            ✓ Claimed
+          <span className="rounded-xl border border-slate-200 bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+            <span aria-hidden="true">✓</span> Claimed
           </span>
         ) : isRefundable ? (
           <button
-            onClick={handleClaim}
+            type="button"
+            onClick={() => void handleClaim()}
             disabled={claiming}
-            className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold shadow-sm transition"
+            className="rounded-xl bg-amber-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-800 disabled:opacity-50"
           >
             {claiming ? 'Claiming...' : 'Claim Refund'}
           </button>
         ) : isReturnable ? (
           <button
-            onClick={handleClaim}
+            type="button"
+            onClick={() => void handleClaim()}
             disabled={claiming}
-            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-semibold shadow-sm transition"
+            className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:opacity-50"
           >
             {claiming ? 'Claiming...' : 'Claim Return'}
           </button>
         ) : (
-          <span className="text-xs text-slate-400 italic">
+          <span className="text-xs italic text-slate-600 dark:text-slate-400">
             No payout pending
           </span>
         )}

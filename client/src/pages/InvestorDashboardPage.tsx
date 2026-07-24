@@ -82,7 +82,10 @@ export const InvestorDashboardPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 px-4 py-2 rounded-xl text-xs font-mono text-slate-700 dark:text-slate-300">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span
+            className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"
+            aria-hidden="true"
+          />
           <span>Connected: {walletAddress}</span>
         </div>
       </div>
@@ -90,6 +93,7 @@ export const InvestorDashboardPage: React.FC = () => {
       {/* Notification Banner */}
       {notification && (
         <div
+          role={notification.type === 'error' ? 'alert' : 'status'}
           className={`p-4 rounded-xl border text-sm flex flex-col md:flex-row md:items-center justify-between gap-2 ${
             notification.type === 'success'
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
@@ -117,13 +121,16 @@ export const InvestorDashboardPage: React.FC = () => {
         {investments.length === 0 ? (
           /* Empty State */
           <div className="bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto text-xl font-bold">
+            <div
+              className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center mx-auto text-xl font-bold"
+              aria-hidden="true"
+            >
               📂
             </div>
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
               No Funded Investments Found
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto">
               You haven&apos;t contributed to any PIP campaigns yet. Browse
               active campaigns to start investing.
             </p>

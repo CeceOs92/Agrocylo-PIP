@@ -87,10 +87,15 @@ function ErrorNotice({ message }: { message: string }) {
 
 function ChartsSkeleton() {
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div
+      className="grid gap-6 lg:grid-cols-2"
+      role="status"
+      aria-label="Loading analytics charts"
+    >
       {[0, 1, 2, 3].map((key) => (
         <div
           key={key}
+          aria-hidden="true"
           className="h-[340px] animate-pulse rounded-campaign border border-soil-200 bg-soil-50"
         />
       ))}
