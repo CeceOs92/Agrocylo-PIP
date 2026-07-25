@@ -4,6 +4,7 @@ import { Playground } from './components/ui/Playground';
 import DesignFoundationsPage from './pages/DesignFoundationsPage';
 import { AnalyticsDashboardPage } from './pages/AnalyticsDashboardPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { CampaignDetailPage, FarmerDashboardPage } from './pages';
 import './App.css';
 
 export default function App() {
@@ -45,6 +46,8 @@ export default function App() {
       <Route path="/analytics" element={<AnalyticsDashboardPage />} />
       <Route path="/admin" element={<AdminDashboardPage />} />
       <Route path="/dev/components" element={<Playground />} />
+      <Route path="/campaign/:id" element={<CampaignDetailPage />} />
+      <Route path="/farmer-dashboard" element={<FarmerDashboardPage />} />
     </Routes>
   );
 }
