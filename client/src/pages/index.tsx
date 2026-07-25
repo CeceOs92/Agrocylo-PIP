@@ -63,15 +63,7 @@ export function CampaignsPage() {
   );
 }
 
-export function FarmerDashboardPage() {
-  return (
-    <PlaceholderPage
-      eyebrow="Dashboard"
-      title="Farmer dashboard"
-      description="Manage your campaigns, report milestones, and track funding from one place."
-    />
-  );
-}
+export { FarmerDashboardPage } from './FarmerDashboardPage';
 
 export function InvestorDashboardPage() {
   return (
