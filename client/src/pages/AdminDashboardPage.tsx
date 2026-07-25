@@ -2,7 +2,10 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { useWallet } from '../context/WalletContext';
 import { useEscrowAdmin } from '../hooks/contract';
-import { useAdminCampaigns } from '../hooks/useAdminCampaigns';
+import {
+  useAdminCampaigns,
+  type AdminCampaignOverview,
+} from '../hooks/useAdminCampaigns';
 import { isEscrowConfigured } from '../lib/soroban/config';
 import { CampaignAdminPanel } from '../components/admin/CampaignAdminPanel';
 
@@ -20,6 +23,46 @@ function NotConfiguredNotice() {
         <code className="font-mono">VITE_PRODUCTION_ESCROW_CONTRACT_ID</code> to
         manage campaigns from the admin dashboard.
       </p>
+    </div>
+  );
+}
+
+function AdminOverview({ campaigns }: { campaigns: AdminCampaignOverview[] }) {
+  const countsByStatus = campaigns.reduce(
+    (acc, { campaign }) => {
+      const tag = campaign.status.tag;
+      acc[tag] = (acc[tag] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
+  const openDisputes = countsByStatus['Disputed'] || 0;
+  const pendingTranches = countsByStatus['Funded'] || 0;
+  const activeFunding =
+    (countsByStatus['Active'] || 0) + (countsByStatus['Funding'] || 0);
+
+  return (
+    <div className={cardClass}>
+      <h2 className="text-h4 text-soil-900 mb-4">Admin Overview</h2>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div>
+          <p className="text-caption text-soil-500">Actionable Campaigns</p>
+          <p className="text-h3 text-soil-900">{campaigns.length}</p>
+        </div>
+        <div>
+          <p className="text-caption text-soil-500">Open Disputes</p>
+          <p className="text-h3 text-soil-900">{openDisputes}</p>
+        </div>
+        <div>
+          <p className="text-caption text-soil-500">Pending Tranches</p>
+          <p className="text-h3 text-soil-900">{pendingTranches}</p>
+        </div>
+        <div>
+          <p className="text-caption text-soil-500">Active / Funding</p>
+          <p className="text-h3 text-soil-900">{activeFunding}</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -117,6 +160,10 @@ export function AdminDashboardPage() {
                 Couldn&apos;t load campaigns from Soroban RPC.
               </p>
             </div>
+          )}
+
+          {campaignsQuery.isSuccess && campaignsQuery.data.length > 0 && (
+            <AdminOverview campaigns={campaignsQuery.data} />
           )}
 
           {campaignsQuery.isSuccess && campaignsQuery.data.length === 0 && (
