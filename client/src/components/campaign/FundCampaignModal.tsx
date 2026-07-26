@@ -205,7 +205,9 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
                 }}
                 placeholder="e.g. 500"
                 aria-invalid={!!error}
-                aria-describedby={error ? 'contribution-amount-error' : undefined}
+                aria-describedby={
+                  error ? 'contribution-amount-error' : undefined
+                }
                 className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-8 pr-4 text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>

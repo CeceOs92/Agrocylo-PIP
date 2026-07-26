@@ -289,11 +289,7 @@ export function CreateCampaignPage() {
                   }
                 />
                 {touched && errors.description && (
-                  <p
-                    id="description-error"
-                    role="alert"
-                    className={errorClass}
-                  >
+                  <p id="description-error" role="alert" className={errorClass}>
                     {errors.description}
                   </p>
                 )}
@@ -491,7 +487,10 @@ export function CreateCampaignPage() {
               )}
 
               {flowError && (
-                <p role="alert" className="text-body-sm text-status-failed-dark">
+                <p
+                  role="alert"
+                  className="text-body-sm text-status-failed-dark"
+                >
                   {flowError}
                 </p>
               )}
