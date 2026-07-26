@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import type { ReactNode } from 'react';
 import { queryClient } from '../lib/queryClient';
+import { ToastProvider } from '../context/ToastContext';
 import { WalletProvider } from '../context/WalletContext';
 import DesignFoundationsPage from '../pages/DesignFoundationsPage';
 import { AnalyticsDashboardPage } from '../pages/AnalyticsDashboardPage';
@@ -26,7 +27,9 @@ function renderWithProviders(ui: ReactNode) {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <WalletProvider>{ui}</WalletProvider>
+        <ToastProvider>
+          <WalletProvider>{ui}</WalletProvider>
+        </ToastProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   );

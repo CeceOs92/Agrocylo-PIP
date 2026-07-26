@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Modal } from '../ui/Modal/Modal';
+import { useToast } from '../../context/ToastContext';
 import {
   validateContribution,
   calculateOwnershipShare,
   fundCampaign,
   type FundCampaignResult,
 } from '../../lib/soroban/campaignService';
+import { toUserFacingError } from '../../lib/soroban/userFacingError';
 
 export interface FundCampaignModalProps {
   isOpen: boolean;
@@ -28,6 +30,7 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
   walletAddress = 'GDF4...M9XZ',
   onSuccess,
 }) => {
+  const toast = useToast();
   const remainingTarget = Math.max(0, totalTarget - currentRaised);
 
   const [amount, setAmount] = useState<string>('');
@@ -67,15 +70,23 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
       );
 
       if (!res.success) {
-        setError(res.error || 'Failed to fund campaign');
+        const message = res.error || 'Failed to fund campaign';
+        setError(message);
+        toast.error('Could not fund campaign', message);
       } else {
         setSuccessResult(res);
+        toast.success(
+          'Contribution successful',
+          `You funded ${campaignTitle} with $${numAmount.toLocaleString()}.`,
+        );
         if (onSuccess) {
           onSuccess(res, numAmount);
         }
       }
     } catch (err) {
-      setError((err as Error).message || 'An unexpected error occurred');
+      const message = toUserFacingError(err);
+      setError(message);
+      toast.error('Could not fund campaign', message);
     } finally {
       setLoading(false);
     }
@@ -205,7 +216,9 @@ export const FundCampaignModal: React.FC<FundCampaignModalProps> = ({
                 }}
                 placeholder="e.g. 500"
                 aria-invalid={!!error}
-                aria-describedby={error ? 'contribution-amount-error' : undefined}
+                aria-describedby={
+                  error ? 'contribution-amount-error' : undefined
+                }
                 className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-8 pr-4 text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>

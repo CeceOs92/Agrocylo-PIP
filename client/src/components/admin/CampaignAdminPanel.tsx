@@ -10,7 +10,7 @@ import {
   useSettleCampaign,
   useMarkFailed,
 } from '../../hooks/contract';
-import { describeContractError } from '../../lib/soroban/contractClient';
+import { toUserFacingError } from '../../lib/soroban/userFacingError';
 import {
   CONTRACT_SYMBOL_HINT,
   isValidContractSymbol,
@@ -131,7 +131,7 @@ function ConfigureTranchesForm({
       setSuccess(true);
       setRows([{ amount: '', milestone: '' }]);
     } catch (err) {
-      setFormError(describeContractError(err));
+      setFormError(toUserFacingError(err));
     }
   }
 
@@ -254,7 +254,7 @@ function ReleaseTrancheForm({
       setSuccess(true);
       setAmount('');
     } catch (err) {
-      setFormError(describeContractError(err));
+      setFormError(toUserFacingError(err));
     }
   }
 
@@ -353,7 +353,7 @@ function ResolveDisputeForm({
       setSuccess(true);
       setPayoutAmount('');
     } catch (err) {
-      setFormError(describeContractError(err));
+      setFormError(toUserFacingError(err));
     }
   }
 
@@ -459,7 +459,7 @@ function SettleCampaignForm({
       setSuccess(true);
       setFarmerPayout('');
     } catch (err) {
-      setFormError(describeContractError(err));
+      setFormError(toUserFacingError(err));
     }
   }
 
@@ -522,7 +522,7 @@ function MarkFailedForm({ campaignId }: { campaignId: string }) {
       setSuccess(true);
       setConfirming(false);
     } catch (err) {
-      setFormError(describeContractError(err));
+      setFormError(toUserFacingError(err));
     }
   }
 
