@@ -8,6 +8,10 @@ import {
 } from '../hooks/useAdminCampaigns';
 import { isEscrowConfigured } from '../lib/soroban/config';
 import { CampaignAdminPanel } from '../components/admin/CampaignAdminPanel';
+import {
+  DashboardRowSkeleton,
+  DashboardRowsSkeleton,
+} from '../components/ui/Skeleton/Skeleton';
 
 const cardClass =
   'rounded-campaign border border-soil-200 bg-white p-6 shadow-campaign sm:p-8';
@@ -119,10 +123,8 @@ export function AdminDashboardPage() {
       )}
 
       {configured && wallet.isConnected && adminQuery.isLoading && (
-        <div className={cardClass}>
-          <p className="text-body-sm text-soil-500">
-            Checking admin authorization…
-          </p>
+        <div className={cardClass} aria-busy="true">
+          <DashboardRowSkeleton />
         </div>
       )}
 
@@ -149,8 +151,8 @@ export function AdminDashboardPage() {
       {isAdmin && (
         <div className="space-y-6">
           {campaignsQuery.isLoading && (
-            <div className={cardClass}>
-              <p className="text-body-sm text-soil-500">Loading campaigns…</p>
+            <div aria-busy="true">
+              <DashboardRowsSkeleton count={3} />
             </div>
           )}
 

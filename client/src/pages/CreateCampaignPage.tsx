@@ -5,7 +5,7 @@ import { StrKey } from '@stellar/stellar-sdk';
 import Header from '../components/Header';
 import { useWallet } from '../context/WalletContext';
 import { useCreateCampaign, useRegisterCampaign } from '../hooks/contract';
-import { describeContractError } from '../lib/soroban/contractClient';
+import { toUserFacingError } from '../lib/soroban/userFacingError';
 import {
   CONTRACT_SYMBOL_HINT,
   isValidContractSymbol,
@@ -156,7 +156,7 @@ export function CreateCampaignPage() {
 
       navigate(`/campaigns/${id.toString()}`);
     } catch (err) {
-      setFlowError(describeContractError(err));
+      setFlowError(toUserFacingError(err));
     }
   }
 
@@ -289,11 +289,7 @@ export function CreateCampaignPage() {
                   }
                 />
                 {touched && errors.description && (
-                  <p
-                    id="description-error"
-                    role="alert"
-                    className={errorClass}
-                  >
+                  <p id="description-error" role="alert" className={errorClass}>
                     {errors.description}
                   </p>
                 )}
@@ -491,7 +487,10 @@ export function CreateCampaignPage() {
               )}
 
               {flowError && (
-                <p role="alert" className="text-body-sm text-status-failed-dark">
+                <p
+                  role="alert"
+                  className="text-body-sm text-status-failed-dark"
+                >
                   {flowError}
                 </p>
               )}
