@@ -8,6 +8,7 @@ import { FundingVolumeChart } from '../components/analytics/FundingVolumeChart';
 import { CampaignsByStatusChart } from '../components/analytics/CampaignsByStatusChart';
 import { FundingOutcomeChart } from '../components/analytics/FundingOutcomeChart';
 import { CampaignSizeChart } from '../components/analytics/CampaignSizeChart';
+import { ChartsGridSkeleton } from '../components/ui/Skeleton/Skeleton';
 
 const numberFormatter = new Intl.NumberFormat('en-US', { notation: 'compact' });
 const percentFormatter = new Intl.NumberFormat('en-US', {
@@ -85,24 +86,6 @@ function ErrorNotice({ message }: { message: string }) {
   );
 }
 
-function ChartsSkeleton() {
-  return (
-    <div
-      className="grid gap-6 lg:grid-cols-2"
-      role="status"
-      aria-label="Loading analytics charts"
-    >
-      {[0, 1, 2, 3].map((key) => (
-        <div
-          key={key}
-          aria-hidden="true"
-          className="h-[340px] animate-pulse rounded-campaign border border-soil-200 bg-soil-50"
-        />
-      ))}
-    </div>
-  );
-}
-
 export function AnalyticsDashboardPage() {
   const analytics = useCampaignAnalytics();
   const isConfigured = analytics.status !== 'not-configured';
@@ -116,7 +99,7 @@ export function AnalyticsDashboardPage() {
       {analytics.status === 'error' && (
         <ErrorNotice message={analytics.message} />
       )}
-      {analytics.status === 'loading' && <ChartsSkeleton />}
+      {analytics.status === 'loading' && <ChartsGridSkeleton />}
 
       {analytics.status === 'ready' && (
         <>

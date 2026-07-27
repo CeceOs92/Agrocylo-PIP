@@ -1241,6 +1241,60 @@ fn test_double_refund_is_blocked() {
     assert!(client.try_claim_refund(&campaign_id, &investor).is_err());
 }
 
+#[test]
+fn test_claim_return_blocks_non_settled_campaign() {
+    let s = token_funded_campaign(); // status = Active/Funded, not Settled
+
+    let result = s.client.try_claim_return(&s.campaign_id, &s.investor1);
+    assert!(result.is_err(), "expected error claiming return on non-settled campaign");
+}
+#[test]
+fn test_claim_return_is_pro_rata() {
+    let s = token_funded_campaign();
+
+    s.client.report_harvest(
+        &s.campaign_id,
+        &s.farmer,
+        &Symbol::new(&s.env, "good"),
+    );
+    s.client.settle_campaign(&s.campaign_id, &s.farmer, &400i128);
+
+    let token = TokenClient::new(&s.env, &s.token);
+    let inv1_before = token.balance(&s.investor1);
+    let inv2_before = token.balance(&s.investor2);
+
+    s.client.claim_return(&s.campaign_id, &s.investor1);
+    s.client.claim_return(&s.campaign_id, &s.investor2);
+
+    assert_eq!(token.balance(&s.investor1), inv1_before + 360);
+    assert_eq!(token.balance(&s.investor2), inv2_before + 240);
+    assert!((360 + 240) <= 600, "sum of claims must be less than return pool");
+}
+
+#[test]
+fn test_double_claim_return_is_blocked() {
+    let s = token_funded_campaign();
+
+    s.client.report_harvest(
+        &s.campaign_id,
+        &s.farmer,
+        &Symbol::new(&s.env, "good"),
+    );
+    s.client.settle_campaign(&s.campaign_id, &s.farmer, &400i128);
+
+    let token = TokenClient::new(&s.env, &s.token);
+    let inv1_before = token.balance(&s.investor1);
+
+    s.client.claim_return(&s.campaign_id, &s.investor1);
+    assert_eq!(token.balance(&s.investor1), inv1_before + 360);
+
+    let result = s.client.try_claim_return(&s.campaign_id, &s.investor1);
+    assert!(result.is_err(), "double claim_return should be rejected, contribution is zeroed");
+
+    // Balance should not change
+    assert_eq!(token.balance(&s.investor1), inv1_before + 360);
+}
+
 // ─── pro-rata dust / truncation tests ────────────────────────────────────────
 
 /// Demonstrates integer-division truncation ("dust") in claim_refund.
