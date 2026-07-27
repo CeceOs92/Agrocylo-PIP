@@ -25,6 +25,19 @@ fn require_admin(env: &Env) {
     storage::get_admin(env).require_auth();
 }
 
+/// Panics if the campaign's recorded liabilities (funds still owed to the
+/// farmer/investors) would exceed the contract's actual on-chain token
+/// balance. The escrow must never claim to hold more than it really does —
+/// this is what stops an admin-only bookkeeping call (`receive_contribution`)
+/// from inflating `total_funded` beyond real deposits.
+fn assert_solvent(env: &Env, campaign: &Campaign) {
+    let token = TokenClient::new(env, &campaign.token_address);
+    let balance = token.balance(&env.current_contract_address());
+    if escrow_held(campaign) > balance {
+        panic!("insufficient token balance to cover recorded liabilities");
+    }
+}
+
 /// Returns true if the campaign is in a terminal / blocked state where
 /// tranche releases must be prevented.
 fn is_terminal(status: &CampaignStatus) -> bool {
@@ -124,6 +137,7 @@ impl ProductionEscrowContract {
             emit_campaign_funded(&env, campaign_id, campaign.total_funded);
         }
 
+        assert_solvent(&env, &campaign);
         storage::set_campaign(&env, campaign_id, &campaign);
 
         let contributed =
@@ -134,8 +148,22 @@ impl ProductionEscrowContract {
         emit_contribution_received(&env, campaign_id, investor, amount);
     }
 
-    /// Admin-only reconciliation path for contributions verified off-chain.
-    /// This does not transfer tokens; use fund_campaign for on-chain funding.
+    /// Admin-only reconciliation path for contributions verified off-chain
+    /// (e.g. tokens that reached the contract through a rail other than
+    /// `fund_campaign`, such as a bridge or a manual transfer). This does
+    /// NOT itself transfer tokens; it only records bookkeeping, and is
+    /// therefore a highly privileged call.
+    ///
+    /// Hardening (see contracts/production_escrow/README.md "Trust model"):
+    /// - Requires BOTH the admin's and the campaign farmer's authorization,
+    ///   so a single compromised key cannot unilaterally inflate the pool.
+    /// - After recording the contribution, asserts that the campaign's
+    ///   recorded liabilities do not exceed the contract's real on-chain
+    ///   token balance — it can never claim to hold more than it actually
+    ///   holds, which bounds the damage a bad reconciliation can do.
+    /// - Emits a distinctly-named `ContribReconciled` event (not
+    ///   `ContribReceived`) so monitoring can flag and alert on this path
+    ///   separately from real `fund_campaign` deposits.
     pub fn receive_contribution(env: Env, campaign_id: u64, investor: Address, amount: i128) {
         if amount <= 0 {
             panic!("amount must be positive");
@@ -144,6 +172,11 @@ impl ProductionEscrowContract {
         require_admin(&env);
 
         let mut campaign = storage::get_campaign(&env, campaign_id);
+
+        // Second signer: the campaign's farmer must also authorize, so a
+        // lone compromised/malicious admin key cannot fabricate contributions.
+        campaign.farmer.require_auth();
+
         if campaign.status != CampaignStatus::Active
             && campaign.status != CampaignStatus::Funding
         {
@@ -157,6 +190,11 @@ impl ProductionEscrowContract {
 
         campaign.total_funded += amount;
         campaign.status = CampaignStatus::Funding;
+
+        // Refuse to record a "contribution" the contract cannot actually
+        // back with real tokens — this is what stops the admin key from
+        // inflating total_funded beyond the escrow's true balance.
+        assert_solvent(&env, &campaign);
         storage::set_campaign(&env, campaign_id, &campaign);
 
         let contributed =
@@ -164,7 +202,7 @@ impl ProductionEscrowContract {
         storage::set_contribution(&env, campaign_id, &investor, contributed);
         storage::extend_instance_ttl(&env);
 
-        emit_contribution_received(&env, campaign_id, investor, amount);
+        emit_reconciled_contribution(&env, campaign_id, investor, amount);
     }
 
     pub fn complete_funding(env: Env, campaign_id: u64, total_funded: i128) {
