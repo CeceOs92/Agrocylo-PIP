@@ -1,9 +1,10 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import {
   HealthCheck,
   HealthCheckService,
   MemoryHealthIndicator,
 } from '@nestjs/terminus';
+import { PingDto } from './dto/ping.dto';
 
 /**
  * Exposes the `/health` endpoint used by orchestrators and uptime monitors to
@@ -25,5 +26,14 @@ export class HealthController {
     return this.health.check([
       () => this.memory.checkHeap('memory_heap', 512 * 1024 * 1024),
     ]);
+  }
+
+  /**
+   * Trivial endpoint whose sole purpose is to exercise the global
+   * ValidationPipe against a real DTO (whitelist/forbidNonWhitelisted/transform).
+   */
+  @Post('ping')
+  ping(@Body() body: PingDto) {
+    return { echo: body.message };
   }
 }

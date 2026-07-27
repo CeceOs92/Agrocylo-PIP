@@ -6,6 +6,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { SkipThrottle } from '@nestjs/throttler';
 import type { Server, Socket } from 'socket.io';
 import { RealtimeEventsService } from './realtime-events.service';
 import {
@@ -25,6 +26,7 @@ import {
  * firehose of every event for every campaign.
  */
 @WebSocketGateway({ cors: { origin: '*' } })
+@SkipThrottle()
 export class CampaignEventsGateway implements OnModuleInit {
   @WebSocketServer()
   server!: Server;

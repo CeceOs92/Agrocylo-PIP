@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { io, Socket } from 'socket.io-client';
 import { AppModule } from './../src/app.module';
+import { configureApp } from './../src/setup-app';
 import { RealtimeEventsService } from '../src/websocket/realtime-events.service';
 import {
   CAMPAIGN_EVENT,
@@ -19,6 +20,7 @@ describe('CampaignEventsGateway (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    configureApp(app);
     await app.listen(0);
     const address = app.getHttpServer().address();
     url = `http://localhost:${address.port}`;

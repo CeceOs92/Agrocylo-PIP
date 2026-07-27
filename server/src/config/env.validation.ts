@@ -24,4 +24,7 @@ export const envValidationSchema = Joi.object({
   EVENT_POLL_INTERVAL_MS: Joi.number().min(1000).default(5000),
   EVENT_RETENTION_DAYS: Joi.number().min(1).max(7).default(7),
   SOROBAN_INDEXER_START_LEDGER: Joi.number().min(1).optional(),
+  CORS_ALLOWED_ORIGINS: Joi.string().required(),
+  THROTTLE_TTL_MS: Joi.number().min(1000).default(60000),
+  THROTTLE_LIMIT: Joi.number().min(1).default(100),
 });
