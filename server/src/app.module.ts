@@ -4,6 +4,7 @@ import { LoggerModule } from './common/logger/logger.module';
 import { HealthModule } from './modules/health/health.module';
 import { IndexerModule } from './indexer/indexer.module';
 import { DatabaseModule } from './database/database.module';
+import { WebsocketModule } from './websocket/websocket.module';
 
 /**
  * Root application module. Feature modules are registered here as the platform
@@ -15,6 +16,7 @@ import { DatabaseModule } from './database/database.module';
     LoggerModule,
     HealthModule,
     DatabaseModule,
+    WebsocketModule,
     IndexerModule,
   ],
 })

@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaClient } from '../../../generated/prisma/client';
+import { RealtimeEventsService } from '../../websocket/realtime-events.service';
+import type { CampaignEventType } from '../../websocket/events.types';
 import type {
   RawSorobanEvent,
   ParsedEvent,
@@ -75,13 +77,26 @@ function isTagLike(v: unknown): boolean {
 export class EventParserService {
   private readonly logger = new Logger(EventParserService.name);
 
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    @Optional() private readonly realtimeEvents?: RealtimeEventsService,
+  ) {}
 
   async processEvent(raw: RawSorobanEvent): Promise<void> {
     try {
       const parsed = this.parseEvent(raw);
       if (!parsed) return;
-      await this.persistEvent(parsed);
+      const persisted = await this.persistEvent(parsed);
+      // Broadcast only after the DB write above has committed, so clients
+      // never see a push update the API/DB can't yet corroborate on refetch.
+      // Skips already-seen events (replay/reconnect) to avoid duplicate pushes.
+      if (persisted && parsed.campaignId) {
+        this.realtimeEvents?.emitCampaignEvent({
+          type: parsed.type as CampaignEventType,
+          campaignId: parsed.campaignId,
+          data: parsed.data,
+        });
+      }
     } catch (error) {
       this.logger.error(
         {
@@ -813,11 +828,11 @@ export class EventParserService {
   // Persistence
   // ---------------------------------------------------------------------
 
-  private async persistEvent(parsed: ParsedEvent): Promise<void> {
+  private async persistEvent(parsed: ParsedEvent): Promise<boolean> {
     const existing = await this.prisma.transaction.findUnique({
       where: { id: parsed.id },
     });
-    if (existing) return;
+    if (existing) return false;
 
     switch (parsed.type) {
       case 'campaign.escrow_created':
@@ -896,6 +911,8 @@ export class EventParserService {
         ),
       },
     });
+
+    return true;
   }
 
   private async ensureUser(address: string, timestamp: number): Promise<void> {

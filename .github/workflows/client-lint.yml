@@ -35,6 +35,12 @@ jobs:
       - name: Prettier check
         run: npm run format:check
 
+      - name: Type check
+        run: npx tsc -b
+
+      - name: Build
+        run: npx vite build
+
   test:
     name: Unit Tests
     runs-on: ubuntu-latest

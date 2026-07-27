@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FundCampaignModal } from '../components/campaign/FundCampaignModal';
 import { StatusBadge } from '../components/campaign/StatusBadge';
+import { useCampaignLiveUpdates } from '../hooks/useCampaignLiveUpdates';
 
 export interface CampaignData {
   id: string;
@@ -23,6 +24,10 @@ export const CampaignDetailPage: React.FC = () => {
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Refreshes this page when another wallet's contribution changes funding
+  // progress; no-op (and no page breakage) if VITE_WS_URL isn't configured.
+  useCampaignLiveUpdates(campaign.id);
 
   const percentage = Math.min(
     100,
