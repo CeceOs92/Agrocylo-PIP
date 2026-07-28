@@ -1,0 +1,12 @@
+{
+  "_readme": "Documented, reviewed exceptions for `npm audit --omit=dev`. Entries here are production-dependency advisories that are known, triaged, and intentionally deferred rather than silently ignored. Every entry MUST have a tracking reason. Anything NOT listed here must fail CI at high/critical severity. See issue #100.",
+  "exceptions": [
+    {
+      "id": "GHSA-qwww-vcr4-c8h2",
+      "package": "react-router",
+      "severity": "high",
+      "reason": "Advisory is scoped to React Router's RSC (React Server Components) framework mode (unstable_middleware + RSC render). This app is a Vite SPA using react-router-dom in declarative/data mode only — no @react-router/dev, no RSC — so the vulnerable code path is not reachable. No non-breaking fix exists yet; the only 'fix' upstream offers is downgrading to 7.11.0, which would lose 7 minor releases of unrelated fixes for a codepath we don't use.",
+      "tracking": "#100"
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "_readme": "Documented, reviewed exceptions for `npm audit --omit=dev`. Entries here are production-dependency advisories that are known, triaged, and intentionally deferred rather than silently ignored. Every entry MUST have a tracking reason. Anything NOT listed here must fail CI at high/critical severity. See issue #100.",
+  "exceptions": [
+    {
+      "id": "GHSA-36xv-jgw5-4q75",
+      "package": "@nestjs/core",
+      "severity": "moderate",
+      "reason": "Fix requires the Nest v10 -> v11 major upgrade (touches @nestjs/platform-express, @nestjs/websockets, @nestjs/platform-socket.io, @nestjs/terminus together). Deferred to a dedicated follow-up PR with a full regression pass (unit + e2e + websocket gateway + Soroban indexer), not something to force in an audit-fix pass.",
+      "tracking": "#100"
+    },
+    {
+      "id": "GHSA-xf7r-hgr6-v32p",
+      "package": "multer",
+      "severity": "high",
+      "reason": "Patched multer only ships via @nestjs/platform-express@11.x (Nest v11). Same Nest major-version follow-up as GHSA-36xv-jgw5-4q75.",
+      "tracking": "#100"
+    },
+    {
+      "id": "GHSA-v52c-386h-88mc",
+      "package": "multer",
+      "severity": "high",
+      "reason": "Same as GHSA-xf7r-hgr6-v32p — bundled with the Nest v11 upgrade.",
+      "tracking": "#100"
+    },
+    {
+      "id": "GHSA-5528-5vmv-3xc2",
+      "package": "multer",
+      "severity": "high",
+      "reason": "Same as GHSA-xf7r-hgr6-v32p — bundled with the Nest v11 upgrade.",
+      "tracking": "#100"
+    },
+    {
+      "id": "GHSA-72gw-mp4g-v24j",
+      "package": "multer",
+      "severity": "high",
+      "reason": "Same as GHSA-xf7r-hgr6-v32p — bundled with the Nest v11 upgrade.",
+      "tracking": "#100"
+    },
+    {
+      "id": "GHSA-3p4h-7m6x-2hcm",
+      "package": "multer",
+      "severity": "high",
+      "reason": "Same as GHSA-xf7r-hgr6-v32p — bundled with the Nest v11 upgrade.",
+      "tracking": "#100"
+    },
+    {
+      "id": "GHSA-v422-hmwv-36x6",
+      "package": "body-parser",
+      "severity": "moderate",
+      "reason": "Patched body-parser only ships via @nestjs/platform-express@11.x. Same Nest v11 follow-up.",
+      "tracking": "#100"
+    },
+    {
+      "id": "GHSA-q8mj-m7cp-5q26",
+      "package": "qs",
+      "severity": "moderate",
+      "reason": "Patched qs only ships via express@5 / @nestjs/platform-express@11.x. Same Nest v11 follow-up.",
+      "tracking": "#100"
+    },
+    {
+      "id": "GHSA-2g4f-4pwh-qvx6",
+      "package": "ajv",
+      "severity": "moderate",
+      "reason": "ReDoS only reachable via the `$data` option, which this codebase's validation schemas do not use. Transitive via @angular-devkit tooling pulled in by @nestjs/cli (dev-only) as well as file-type; low real-world exposure. Will resolve naturally once @nestjs/cli and @nestjs/platform-express are bumped.",
+      "tracking": "#100"
+    },
+    {
+      "id": "GHSA-5v7r-6r5c-r473",
+      "package": "file-type",
+      "severity": "moderate",
+      "reason": "DoS via malformed ASF media parsing; server does not accept ASF uploads. Fix ships via @nestjs/common file-type bump, currently blocked on the same dependency graph as the Nest v11 upgrade.",
+      "tracking": "#100"
+    },
+    {
+      "id": "GHSA-j47w-4g3g-c36v",
+      "package": "file-type",
+      "severity": "moderate",
+      "reason": "ZIP decompression bomb DoS via [Content_Types].xml; server does not accept ZIP/office-document uploads. Same follow-up as GHSA-5v7r-6r5c-r473.",
+      "tracking": "#100"
+    }
+  ]
+}

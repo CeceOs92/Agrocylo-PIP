@@ -23,6 +23,11 @@
       "prettier --write"
     ]
   },
+  "overrides": {
+    "@stellar/stellar-sdk": {
+      "axios": "^1.18.1"
+    }
+  },
   "dependencies": {
     "@stellar/freighter-api": "^6.0.1",
     "@stellar/stellar-sdk": "^16.0.1",
