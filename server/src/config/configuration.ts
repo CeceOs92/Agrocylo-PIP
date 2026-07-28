@@ -6,6 +6,12 @@ export interface AppConfig {
   nodeEnv: string;
   port: number;
   logLevel: string;
+  corsAllowedOrigins: string[];
+}
+
+export interface ThrottleConfig {
+  ttlMs: number;
+  limit: number;
 }
 
 export interface DbConfig {
@@ -27,11 +33,16 @@ export default (): {
   app: AppConfig;
   db: DbConfig;
   soroban: SorobanConfig;
+  throttle: ThrottleConfig;
 } => ({
   app: {
     nodeEnv: process.env.NODE_ENV ?? 'development',
     port: parseInt(process.env.PORT ?? '3000', 10),
     logLevel: process.env.LOG_LEVEL ?? 'info',
+    corsAllowedOrigins: (process.env.CORS_ALLOWED_ORIGINS ?? '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0),
   },
   db: {
     url: process.env.DATABASE_URL ?? 'file:./dev.db',
@@ -52,5 +63,9 @@ export default (): {
     indexerStartLedger: process.env.SOROBAN_INDEXER_START_LEDGER
       ? parseInt(process.env.SOROBAN_INDEXER_START_LEDGER, 10)
       : undefined,
+  },
+  throttle: {
+    ttlMs: parseInt(process.env.THROTTLE_TTL_MS ?? '60000', 10),
+    limit: parseInt(process.env.THROTTLE_LIMIT ?? '100', 10),
   },
 });

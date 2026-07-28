@@ -55,11 +55,14 @@ Copy the example environment file and adjust values as needed:
 cp .env.example .env
 ```
 
-| Variable    | Description                                   | Default       |
-| ----------- | --------------------------------------------- | ------------- |
-| `NODE_ENV`  | Runtime environment                           | `development` |
-| `PORT`      | Port the HTTP server listens on               | `3000`        |
-| `LOG_LEVEL` | Pino log level (`trace`…`fatal`)              | `info`        |
+| Variable                | Description                                          | Default       |
+| ----------------------- | ----------------------------------------------------- | ------------- |
+| `NODE_ENV`              | Runtime environment                                    | `development` |
+| `PORT`                  | Port the HTTP server listens on                        | `3000`        |
+| `LOG_LEVEL`              | Pino log level (`trace`…`fatal`)                       | `info`        |
+| `CORS_ALLOWED_ORIGINS`  | Comma-separated allowlist of origins permitted by CORS | _required_    |
+| `THROTTLE_TTL_MS`        | Rate-limit window, in ms                               | `60000`       |
+| `THROTTLE_LIMIT`         | Max requests per window per client                     | `100`         |
 
 Environment variables are validated on startup; the server fails fast if any
 value is missing or invalid.
