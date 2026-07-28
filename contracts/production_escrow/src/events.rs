@@ -13,6 +13,15 @@ pub fn emit_contribution_received(env: &Env, campaign_id: u64, investor: Address
     env.events().publish(topics, payload);
 }
 
+/// Distinct from `emit_contribution_received`: marks a bookkeeping-only
+/// admin reconciliation (`receive_contribution`), not a real on-chain
+/// deposit, so monitoring/indexers can flag and alert on it separately.
+pub fn emit_reconciled_contribution(env: &Env, campaign_id: u64, investor: Address, amount: i128) {
+    let topics = (Symbol::new(env, "ContribReconciled"), campaign_id);
+    let payload = (investor, env.ledger().timestamp(), amount);
+    env.events().publish(topics, payload);
+}
+
 pub fn emit_campaign_funded(env: &Env, campaign_id: u64, total_funded: i128) {
     let topics = (Symbol::new(env, "CampaignFunded"), campaign_id);
     let payload = (env.ledger().timestamp(), total_funded);

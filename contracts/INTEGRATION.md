@@ -226,6 +226,16 @@ For externally settled funding that has already been verified off-chain, an admi
 admin may then call `complete_funding(campaign_id, total_funded)` only when `total_funded`
 equals the campaign's stored `total_funded` and the stored total has reached the target.
 
+**Trust model / hardening (see `contracts/production_escrow/README.md`):**
+`receive_contribution` requires **both** admin and campaign-farmer `require_auth()`
+(a single compromised admin key cannot call it alone), and the contract asserts a
+solvency invariant — `total_funded - released - refundable - returnable` must never
+exceed the contract's real `token.balance(contract_address)` — panicking instead of
+recording a reconciliation the contract cannot actually back. It also emits a
+distinctly-named `ContribReconciled` event (not `ContribReceived`), so indexers must
+treat it as a separate, auditable event stream from genuine `fund_campaign` deposits
+rather than folding it into ordinary deposit monitoring.
+
 ### 3. Settlement (Happy Path)
 
 ```text

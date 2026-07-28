@@ -27,8 +27,9 @@ fn create_token<'a>(env: &'a Env, admin: &Address) -> (Address, StellarAssetClie
     (token_id.address(), sac)
 }
 
-/// Fully funded campaign via the legacy receive_contribution path (no token
-/// transfer) so existing dispute/refund tests keep working.
+/// Fully funded campaign via the admin/farmer-reconciled receive_contribution
+/// path (tokens already sitting in the contract, e.g. via another rail) so
+/// existing dispute/refund tests keep working.
 fn funded_campaign() -> Setup {
     let env = Env::default();
     env.mock_all_auths();
@@ -41,9 +42,13 @@ fn funded_campaign() -> Setup {
     let investor1 = Address::generate(&env);
     let investor2 = Address::generate(&env);
     let campaign_id = 1u64;
-    let token_address = Address::generate(&env);
     let deadline = 1000000u64;
     let harvest_metadata = Symbol::new(&env, "maize");
+
+    let (token_address, sac) = create_token(&env, &admin);
+    // Tokens already reconciled off-chain must actually be in the contract
+    // for receive_contribution's solvency check to accept them.
+    sac.mint(&contract_id, &1000i128);
 
     client.initialize(&admin);
     client.create_campaign(
@@ -322,6 +327,142 @@ fn test_receive_contribution_unauthorized_fails() {
     client.receive_contribution(&1u64, &investor, &500i128);
 }
 
+// ─── receive_contribution hardening tests (issue #99) ───────────────────────
+
+/// Solvency invariant: an admin cannot use receive_contribution to record a
+/// "contribution" the contract does not actually hold in real tokens. This
+/// is what stops a compromised admin key from inflating total_funded (and
+/// therefore diluting real investors' pro-rata payouts, or over-promising
+/// refunds the contract can never pay out).
+#[test]
+#[should_panic(expected = "insufficient token balance")]
+fn test_receive_contribution_exceeding_contract_balance_panics() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register_contract(None, ProductionEscrowContract);
+    let client = ProductionEscrowContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    let farmer = Address::generate(&env);
+    let attacker = Address::generate(&env);
+    let (token, sac) = create_token(&env, &admin);
+    // The contract only really holds 10 tokens.
+    sac.mint(&contract_id, &10i128);
+
+    client.initialize(&admin);
+    client.create_campaign(
+        &1u64,
+        &farmer,
+        &1000i128,
+        &token,
+        &1000000u64,
+        &Symbol::new(&env, "corn"),
+    );
+
+    // Even with all required signers mocked, fabricating a 900-token
+    // contribution the contract cannot back must panic.
+    client.receive_contribution(&1u64, &attacker, &900i128);
+}
+
+/// Second-signer requirement: the admin alone (without the campaign farmer
+/// co-authorizing) must not be able to call receive_contribution. This
+/// bounds the damage a single compromised admin key can do.
+#[test]
+#[should_panic]
+fn test_receive_contribution_without_farmer_auth_fails() {
+    use soroban_sdk::testutils::{MockAuth, MockAuthInvoke};
+
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register_contract(None, ProductionEscrowContract);
+    let client = ProductionEscrowContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    let farmer = Address::generate(&env);
+    let investor = Address::generate(&env);
+    let (token, sac) = create_token(&env, &admin);
+    sac.mint(&contract_id, &500i128);
+
+    client.initialize(&admin);
+    client.create_campaign(
+        &1u64,
+        &farmer,
+        &1000i128,
+        &token,
+        &1000000u64,
+        &Symbol::new(&env, "corn"),
+    );
+
+    // Only the admin authorizes this specific call; the farmer does not.
+    env.mock_auths(&[MockAuth {
+        address: &admin,
+        invoke: &MockAuthInvoke {
+            contract: &contract_id,
+            fn_name: "receive_contribution",
+            args: (1u64, investor.clone(), 500i128).into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+    client.receive_contribution(&1u64, &investor, &500i128);
+}
+
+/// receive_contribution must emit a distinctly-named event so monitoring can
+/// tell reconciliations apart from real fund_campaign deposits.
+#[test]
+fn test_receive_contribution_emits_distinct_reconciled_event() {
+    let s = funded_campaign();
+
+    let events = s.env.events().all();
+    let reconciled_count = events
+        .iter()
+        .filter(|e| {
+            e.1 == (Symbol::new(&s.env, "ContribReconciled"), s.campaign_id).into_val(&s.env)
+        })
+        .count();
+    let received_count = events
+        .iter()
+        .filter(|e| {
+            e.1 == (Symbol::new(&s.env, "ContribReceived"), s.campaign_id).into_val(&s.env)
+        })
+        .count();
+
+    assert_eq!(reconciled_count, 2, "expected 2 ContribReconciled events");
+    assert_eq!(received_count, 0, "receive_contribution must not emit ContribReceived");
+}
+
+/// No regression: the legitimate reconciliation flow (real tokens already in
+/// the contract, admin + farmer both authorize) still works end-to-end.
+#[test]
+fn test_receive_contribution_legitimate_reconciliation_succeeds() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register_contract(None, ProductionEscrowContract);
+    let client = ProductionEscrowContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    let farmer = Address::generate(&env);
+    let investor = Address::generate(&env);
+    let (token, sac) = create_token(&env, &admin);
+    sac.mint(&contract_id, &500i128);
+
+    client.initialize(&admin);
+    client.create_campaign(
+        &1u64,
+        &farmer,
+        &1000i128,
+        &token,
+        &1000000u64,
+        &Symbol::new(&env, "corn"),
+    );
+
+    client.receive_contribution(&1u64, &investor, &500i128);
+
+    let campaign = client.get_campaign(&1u64);
+    assert_eq!(campaign.total_funded, 500);
+    assert_eq!(campaign.status, CampaignStatus::Funding);
+    assert_eq!(client.get_contribution(&1u64, &investor), 500);
+}
+
 #[test]
 #[should_panic]
 fn test_complete_funding_unauthorized_fails() {
@@ -333,7 +474,8 @@ fn test_complete_funding_unauthorized_fails() {
     let admin = Address::generate(&env);
     let farmer = Address::generate(&env);
     let investor = Address::generate(&env);
-    let token = Address::generate(&env);
+    let (token, sac) = create_token(&env, &admin);
+    sac.mint(&contract_id, &1000i128);
 
     client.initialize(&admin);
     client.create_campaign(
@@ -361,7 +503,8 @@ fn test_complete_funding_rejects_mismatched_total() {
     let admin = Address::generate(&env);
     let farmer = Address::generate(&env);
     let investor = Address::generate(&env);
-    let token = Address::generate(&env);
+    let (token, sac) = create_token(&env, &admin);
+    sac.mint(&contract_id, &600i128);
 
     client.initialize(&admin);
     client.create_campaign(
@@ -387,7 +530,8 @@ fn test_complete_funding_rejects_underfunded_campaign() {
     let admin = Address::generate(&env);
     let farmer = Address::generate(&env);
     let investor = Address::generate(&env);
-    let token = Address::generate(&env);
+    let (token, sac) = create_token(&env, &admin);
+    sac.mint(&contract_id, &600i128);
 
     client.initialize(&admin);
     client.create_campaign(
