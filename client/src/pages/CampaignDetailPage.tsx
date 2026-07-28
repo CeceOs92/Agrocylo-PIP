@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FundCampaignModal } from '../components/campaign/FundCampaignModal';
 import { StatusBadge } from '../components/campaign/StatusBadge';
+import { useCampaignLiveUpdates } from '../hooks/useCampaignLiveUpdates';
 import { DetailPageSkeleton } from '../components/ui/Skeleton/Skeleton';
 
 export interface CampaignData {
@@ -30,6 +31,12 @@ export const CampaignDetailPage: React.FC = () => {
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  // Refreshes this page when another wallet's contribution changes funding
+  // progress; no-op (and no page breakage) if VITE_WS_URL isn't configured.
+  // Called unconditionally (before the loading early-return) per rules of
+  // hooks; the hook itself no-ops until a campaign id is available.
+  useCampaignLiveUpdates(campaign?.id);
 
   if (!campaign) {
     return (

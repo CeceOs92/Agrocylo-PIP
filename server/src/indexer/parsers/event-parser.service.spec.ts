@@ -685,4 +685,64 @@ describe('EventParserService', () => {
       expect(prisma.transaction.create).not.toHaveBeenCalled();
     });
   });
+
+  describe('broadcast-after-persist wiring', () => {
+    it('emits a realtime event only after the DB write succeeds', async () => {
+      const emitCampaignEvent = jest.fn();
+      const withRealtime = new EventParserService(prisma as any, {
+        emitCampaignEvent,
+      } as any);
+
+      await withRealtime.processEvent(
+        rawEvent(
+          'e-rt1',
+          ['ContribReceived', CAMPAIGN_ID],
+          [INVESTOR, 1700000000n, 250n],
+        ),
+      );
+
+      expect(prisma.transaction.create).toHaveBeenCalled();
+      expect(emitCampaignEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'campaign.invested',
+          campaignId: '123',
+        }),
+      );
+    });
+
+    it('does not emit for already-persisted (replayed) events', async () => {
+      const emitCampaignEvent = jest.fn();
+      prisma.transaction.findUnique.mockResolvedValueOnce({ id: 'e-rt2' });
+      const withRealtime = new EventParserService(prisma as any, {
+        emitCampaignEvent,
+      } as any);
+
+      await withRealtime.processEvent(
+        rawEvent(
+          'e-rt2',
+          ['ContribReceived', CAMPAIGN_ID],
+          [INVESTOR, 1700000000n, 250n],
+        ),
+      );
+
+      expect(emitCampaignEvent).not.toHaveBeenCalled();
+    });
+
+    it('does not emit when the parsed event has no campaignId', async () => {
+      const emitCampaignEvent = jest.fn();
+      const withRealtime = new EventParserService(prisma as any, {
+        emitCampaignEvent,
+      } as any);
+
+      await withRealtime.processEvent(
+        rawEvent(
+          'e-rt3',
+          ['AdminInitialized', CAMPAIGN_ID],
+          ['GADMIN', 1700000000n, 999n],
+        ),
+      );
+
+      expect(emitCampaignEvent).not.toHaveBeenCalled();
+    });
+  });
 });
