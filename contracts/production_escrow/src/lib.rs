@@ -80,6 +80,15 @@ impl ProductionEscrowContract {
         if target_amount <= 0 {
             panic!("target amount must be greater than zero");
         }
+        // Stellar token amounts are bounded by i64::MAX stroops (~9.2 × 10¹⁸).
+        // Capping here prevents intermediate overflow in pro-rata arithmetic:
+        //   contributed * refundable / total_funded
+        // Both contributed and refundable can be at most total_funded ≤ target_amount.
+        // With target_amount ≤ i64::MAX, the worst-case product is (i64::MAX)² ≈ 2¹²⁶,
+        // which fits safely in u128 used by the safe_pro_rata helper.
+        if target_amount > i64::MAX as i128 {
+            panic!("target_amount exceeds safe range for pro-rata arithmetic (must be <= i64::MAX)");
+        }
 
         farmer.require_auth();
 
@@ -598,3 +607,5 @@ impl ProductionEscrowContract {
 
 #[cfg(test)]
 mod test;
+#[cfg(test)]
+mod proptest_invariants;
