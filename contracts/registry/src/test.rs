@@ -1,6 +1,6 @@
 use crate::{ActivityAction, CampaignStatus, RegistryContract, RegistryContractClient};
 use soroban_sdk::{
-    testutils::{Address as _, Events, Ledger},
+    testutils::{Address as _, Events, Ledger, MockAuth, MockAuthInvoke},
     vec, Address, Env, IntoVal, String, Symbol,
 };
 
@@ -246,6 +246,71 @@ fn test_record_activity_as_approved_contract() {
 
     let activities = client.get_campaign_activities(&campaign_id);
     assert_eq!(activities.len(), 1);
+}
+
+#[test]
+#[should_panic]
+fn test_record_activity_claimed_admin_requires_admin_auth() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let non_admin = Address::generate(&env);
+    let contract_id = env.register_contract(None, RegistryContract);
+    let client = RegistryContractClient::new(&env, &contract_id);
+
+    client.initialize(&admin);
+
+    let campaign_id = 1u64;
+    env.mock_auths(&[MockAuth {
+        address: &non_admin,
+        invoke: &MockAuthInvoke {
+            contract: &contract_id,
+            fn_name: "record_activity",
+            args: (campaign_id, admin.clone(), ActivityAction::CampaignCreated).into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+
+    client.record_activity(&campaign_id, &admin, &ActivityAction::CampaignCreated);
+}
+
+#[test]
+#[should_panic]
+fn test_record_activity_claimed_approved_contract_requires_contract_auth() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let approved_contract = Address::generate(&env);
+    let non_approved = Address::generate(&env);
+    let contract_id = env.register_contract(None, RegistryContract);
+    let client = RegistryContractClient::new(&env, &contract_id);
+
+    client.initialize(&admin);
+    client.approve_contract(&approved_contract);
+
+    let campaign_id = 1u64;
+    env.mock_auths(&[MockAuth {
+        address: &non_approved,
+        invoke: &MockAuthInvoke {
+            contract: &contract_id,
+            fn_name: "record_activity",
+            args: (
+                campaign_id,
+                approved_contract.clone(),
+                ActivityAction::CampaignFunded,
+            )
+                .into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+
+    client.record_activity(
+        &campaign_id,
+        &approved_contract,
+        &ActivityAction::CampaignFunded,
+    );
 }
 
 #[test]
