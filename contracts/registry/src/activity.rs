@@ -4,17 +4,12 @@ use crate::{
 };
 use soroban_sdk::{Address, Env, Vec};
 
-fn require_authorized(env: &Env, actor: &Address) {
-    let is_admin = storage::get_admin(env) == *actor;
-    let is_approved = storage::is_contract_approved(env, actor);
-
-    if !is_admin && !is_approved {
-        actor.require_auth();
-    }
+fn require_authorized(actor: &Address) {
+    actor.require_auth();
 }
 
 pub fn record_activity(env: &Env, campaign_id: u64, actor: &Address, action_type: ActivityAction) {
-    require_authorized(env, actor);
+    require_authorized(actor);
 
     let timestamp = env.ledger().timestamp();
     let ledger_sequence = env.ledger().sequence();

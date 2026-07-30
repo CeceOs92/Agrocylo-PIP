@@ -45,11 +45,12 @@ escrow contract itself, once cross-contract calls are added) calling
 plays that indexer role: after every escrow call it makes the matching
 `registry.record_activity(...)` call, then asserts the two contracts agree.
 
-The registry's `record_activity` only requires `actor.require_auth()` when
-the actor is **not** the admin and **not** an approved contract
-(`approve_contract`). The harness approves the escrow contract's address in
-the registry during setup, so activity can be attributed to the escrow
-contract or its investors/farmer without re-deriving a separate auth flow
+The registry's `record_activity` requires `actor.require_auth()` for every
+activity entry, including entries attributed to the admin or an approved
+contract (`approve_contract`). The harness uses mocked authorizations during
+setup so activity can be attributed to the escrow contract or its
+investors/farmer while still matching the production requirement that the
+claimed actor signs the activity entry.
 for every step.
 
 ## Running the tests
