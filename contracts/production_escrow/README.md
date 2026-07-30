@@ -93,18 +93,44 @@ cargo build --target wasm32-unknown-unknown --release -p production_escrow
 ## Testing
 
 ```bash
+# Unit tests
 cargo test -p production_escrow
+
+# Property-based invariant tests only
+cargo test -p production_escrow proptest
+
+# More cases (default is 200 per suite; CI uses 1000)
+PROPTEST_CASES=2000 cargo test -p production_escrow proptest
+
+# Reproduce a specific failure by seed
+PROPTEST_SEED=0xDEADBEEF cargo test -p production_escrow proptest
 ```
+
+### Property-based invariants (`src/proptest_invariants.rs`)
+
+Three financial invariants verified across arbitrary investor contributions:
+
+| Test | Invariant |
+|------|-----------|
+| `prop_failed_campaign_refunds_bounded` | `sum(claimed_refunds) ≤ campaign.refundable` and all contribution slots zeroed after claim |
+| `prop_settled_campaign_returns_bounded` | `sum(claimed_returns) ≤ campaign.returnable` and all contribution slots zeroed after claim |
+| `prop_partial_settlement_conservation` | `released + refundable == held` exactly — no rounding loss; `escrow_held == 0` after resolution |
+
+The pro-rata arithmetic `contributed * refundable / total_funded` truncates toward zero, so
+`sum(claimed) ≤ refundable` with any unallocated dust remaining in the contract permanently
+(no sweep path). The conservation test verifies there is **no** such dust for the
+`payout + refundable = held` identity, which uses exact subtraction rather than pro-rata division.
 
 ## Project Structure
 
 ```
 production_escrow/
 ├── src/
-│   ├── lib.rs      # Contract entry point
-│   ├── types.rs    # Data types (CampaignStatus enum, Campaign struct, DataKey)
-│   ├── storage.rs  # Storage helpers
-│   └── test.rs     # Test suite
+│   ├── lib.rs                  # Contract entry point
+│   ├── types.rs                # Data types (CampaignStatus enum, Campaign struct, DataKey)
+│   ├── storage.rs              # Storage helpers
+│   ├── test.rs                 # Unit test suite
+│   └── proptest_invariants.rs  # Property-based financial invariants
 └── Cargo.toml
 ```
 
