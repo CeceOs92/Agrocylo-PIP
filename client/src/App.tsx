@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { Playground } from './components/ui/Playground';
+import { AppLayout } from './components/AppLayout';
 import DesignFoundationsPage from './pages/DesignFoundationsPage';
 import { AnalyticsDashboardPage } from './pages/AnalyticsDashboardPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { ActivityFeedPage } from './pages/ActivityFeedPage';
+import { CampaignDetailPage } from './pages/CampaignDetailPage';
 import './App.css';
 
 export default function App() {
@@ -45,6 +48,12 @@ export default function App() {
       <Route path="/analytics" element={<AnalyticsDashboardPage />} />
       <Route path="/admin" element={<AdminDashboardPage />} />
       <Route path="/dev/components" element={<Playground />} />
+
+      {/* AppLayout routes */}
+      <Route element={<AppLayout />}>
+        <Route path="/activity" element={<ActivityFeedPage />} />
+        <Route path="/campaigns/:id" element={<CampaignDetailPage />} />
+      </Route>
     </Routes>
   );
 }

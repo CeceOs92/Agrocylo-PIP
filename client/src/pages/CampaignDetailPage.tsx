@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FundCampaignModal } from '../components/campaign/FundCampaignModal';
 import { StatusBadge } from '../components/campaign/StatusBadge';
+import { ActivityFeed } from '../components/campaign/ActivityFeed';
 import { useCampaignLiveUpdates } from '../hooks/useCampaignLiveUpdates';
 import { DetailPageSkeleton } from '../components/ui/Skeleton/Skeleton';
 
@@ -128,6 +129,14 @@ export const CampaignDetailPage: React.FC = () => {
         currentRaised={campaign.currentRaised}
         onSuccess={handleFundingSuccess}
       />
+
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+        <ActivityFeed
+          campaignId={BigInt(campaign.id.replace(/\D/g, '') || '0')}
+          pageSize={10}
+          refreshIntervalMs={30_000}
+        />
+      </div>
     </div>
   );
 };

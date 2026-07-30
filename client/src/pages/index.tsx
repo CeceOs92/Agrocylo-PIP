@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 export { CampaignDetailPage } from './CampaignDetailPage';
 export { CreateCampaignPage } from './CreateCampaignPage';
 export { AdminDashboardPage } from './AdminDashboardPage';
+export { ActivityFeedPage } from './ActivityFeedPage';
 
 type PlaceholderPageProps = {
   eyebrow: string;
@@ -83,15 +84,7 @@ export function InvestorDashboardPage() {
   );
 }
 
-export function ActivityFeedPage() {
-  return (
-    <PlaceholderPage
-      eyebrow="Platform updates"
-      title="Activity feed"
-      description="Follow the latest campaign, funding, milestone, and settlement events."
-    />
-  );
-}
+// ActivityFeedPage is the real implementation exported from ./ActivityFeedPage
 
 export function ProfilePage() {
   return (
