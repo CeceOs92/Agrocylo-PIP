@@ -665,7 +665,7 @@ fn test_link_campaign_escrow_success() {
 
     client.link_campaign_escrow(&campaign_id, &user, &escrow, &crop, &region);
 
-    let record = client.get_campaign_record(&campaign_id);
+    let record = client.get_campaign_record(&campaign_id).unwrap();
     assert_eq!(record.campaign_id, campaign_id);
     assert_eq!(record.farmer, user);
     assert_eq!(record.escrow_contract, escrow);
@@ -687,12 +687,12 @@ fn test_link_campaign_escrow_duplicate_fails() {
 }
 
 #[test]
-#[should_panic(expected = "campaign not found")]
-fn test_get_campaign_record_nonexistent_fails() {
+fn test_get_campaign_record_nonexistent_returns_none() {
     let (_env, admin, _, _, client) = create_test_env();
     client.initialize(&admin);
 
-    client.get_campaign_record(&999u64);
+    let record = client.get_campaign_record(&999u64);
+    assert!(record.is_none());
 }
 
 #[test]
@@ -707,7 +707,7 @@ fn test_update_campaign_status_as_escrow_contract() {
 
     client.update_campaign_status(&campaign_id, &escrow, &CampaignStatus::Funding);
 
-    let record = client.get_campaign_record(&campaign_id);
+    let record = client.get_campaign_record(&campaign_id).unwrap();
     assert_eq!(record.status, CampaignStatus::Funding);
 
     let event = env.events().all().last().unwrap();
@@ -729,7 +729,7 @@ fn test_update_campaign_status_as_admin() {
 
     client.update_campaign_status(&campaign_id, &admin, &CampaignStatus::Settled);
 
-    let record = client.get_campaign_record(&campaign_id);
+    let record = client.get_campaign_record(&campaign_id).unwrap();
     assert_eq!(record.status, CampaignStatus::Settled);
 }
 
