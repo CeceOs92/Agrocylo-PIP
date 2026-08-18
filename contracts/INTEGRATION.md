@@ -51,6 +51,30 @@ In the intended integration, `ProductionEscrowContract` (or an authorized backen
 
 > **Rule of thumb:** Financial and dispute state lives in `ProductionEscrowContract`. Audit and access-control state lives in `RegistryContract`.
 
+## Registry Status Mirror: Consistency Dependency and Failure Modes
+
+The registry's `CampaignRecord.status` is a **mirror** of the escrow's authoritative `Campaign.status`, kept in sync by `update_campaign_status`.
+
+**This dependency is off-chain and not enforced on-chain.** `ProductionEscrowContract` has no dependency on, and never calls into, the `registry` crate. Every mirror update depends entirely on an external orchestrator (or an approved contract) calling `RegistryContract::update_campaign_status` / `record_activity` after each escrow transition, in the correct order.
+
+### Failure mode
+
+If the orchestrator crashes between an escrow transition and the corresponding registry call, is buggy, or is simply never deployed for a given environment, `CampaignRecord.status` silently and permanently diverges from the escrow's real `Campaign.status`. There is no on-chain signal that this has happened.
+
+**Detecting drift:** compare `ProductionEscrowContract::get_campaign(id).status` against `RegistryContract::get_campaign_record(id).status` for the same `campaign_id`. Any mismatch is drift.
+
+### Decision: on-chain reconciliation, not a full redesign
+
+Rather than having `ProductionEscrowContract` take a registry address at `initialize` and call into the registry directly on every lifecycle method (a larger architectural change, and a new coupling of escrow -> registry that was deliberately avoided), the registry exposes a permissionless self-heal entry point:
+
+```
+RegistryContract::reconcile_campaign_status(campaign_id: u64) -> bool
+```
+
+This makes a cross-contract call from the registry into the campaign's linked `ProductionEscrowContract::get_campaign`, reads the real on-chain status, and corrects the mirror if it has drifted. No caller authorization is required -- the call does not trust anything the caller supplies, only what the escrow contract itself reports, so it is safe for anyone (a monitoring bot, a farmer, an investor) to call at any time. It emits a distinct `CampaignStatusReconciled` event (not `CampaignStatusUpdated`) so indexers and monitoring can flag every drift occurrence separately from normal orchestrator-driven updates.
+
+Operationally: run `reconcile_campaign_status` on a schedule (e.g. as part of the same monitoring job that detects drift above), and also call it opportunistically before trusting `get_campaign_record` for any campaign whose orchestrator health is uncertain.
+
 ## Rounding / Dust Policy
 
 Both `claim_refund` and `claim_return` compute the investor's pro-rata share via integer division:
@@ -328,6 +352,7 @@ Investor 2
 - `is_contract_approved(env: Env, contract: Address) -> bool`
 - `record_activity(env: Env, campaign_id: u64, actor: Address, action_type: ActivityAction)`
 - `get_campaign_activities(env: Env, campaign_id: u64) -> Vec<ActivityRecord>`
+- `reconcile_campaign_status(env: Env, campaign_id: u64) -> bool` (permissionless; self-heals status drift against the escrow contract)
 
 ## Acceptance Criteria Checklist
 
