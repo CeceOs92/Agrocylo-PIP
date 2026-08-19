@@ -19,7 +19,7 @@ use production_escrow::{
     Campaign, CampaignStatus, DisputeResolution, ProductionEscrowContract,
     ProductionEscrowContractClient,
 };
-use registry::{ActivityAction, RegistryContract, RegistryContractClient};
+use registry::{ActivityAction, CampaignStatus as RegistryCampaignStatus, RegistryContract, RegistryContractClient};
 use soroban_sdk::{
     testutils::{Address as _, Events},
     token::{Client as TokenClient, StellarAssetClient},
@@ -361,6 +361,53 @@ fn registry_activity_log_tracks_every_escrow_transition() {
         .record_activity(&h.campaign_id, &h.admin, &ActivityAction::CampaignSettled);
     assert_eq!(h.activity_count(), 5);
     assert_eq!(h.campaign().status, CampaignStatus::Settled);
+}
+
+#[test]
+fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
+    let h = Harness::new();
+    let crop = Symbol::new(&h.env, "maize");
+    let region = Symbol::new(&h.env, "central");
+    h.registry.link_campaign_escrow(
+        &h.campaign_id,
+        &h.farmer,
+        &h.escrow.address,
+        &crop,
+        &region,
+    );
+    assert_eq!(
+        h.registry.get_campaign_record(&h.campaign_id).status,
+        RegistryCampaignStatus::Active
+    );
+
+    // Drive the escrow all the way to Failed without ever telling the
+    // registry - this simulates the orchestrator crashing or never
+    // running after the escrow transition, the failure mode documented
+    // in INTEGRATION.md.
+    h.fund_fully();
+    assert_eq!(h.campaign().status, CampaignStatus::Funded);
+    h.escrow.mark_failed(&h.campaign_id);
+    assert_eq!(h.campaign().status, CampaignStatus::Failed);
+
+    // The registry mirror has silently drifted: escrow says Failed,
+    // registry still says Active, with no on-chain signal of it.
+    assert_eq!(
+        h.registry.get_campaign_record(&h.campaign_id).status,
+        RegistryCampaignStatus::Active
+    );
+
+    // Anyone can call reconcile_campaign_status permissionlessly to self-heal.
+    let corrected = h.registry.reconcile_campaign_status(&h.campaign_id);
+    assert!(corrected);
+    assert_eq!(
+        h.registry.get_campaign_record(&h.campaign_id).status,
+        RegistryCampaignStatus::Failed
+    );
+    assert!(registry_emitted(&h, "CampaignStatusReconciled"));
+
+    // Calling it again once the mirror is already correct is a no-op.
+    let corrected_again = h.registry.reconcile_campaign_status(&h.campaign_id);
+    assert!(!corrected_again);
 }
 
 // ─── event helpers ───────────────────────────────────────────────────────

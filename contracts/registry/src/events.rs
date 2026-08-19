@@ -9,6 +9,7 @@ pub const FARMER_REGISTERED: &str = "FarmerRegistered";
 pub const CAMPAIGN_REGISTERED: &str = "CampaignRegistered";
 pub const CAMPAIGN_ESCROW_LINKED: &str = "CampaignEscrowLinked";
 pub const CAMPAIGN_STATUS_UPDATED: &str = "CampaignStatusUpdated";
+pub const CAMPAIGN_STATUS_RECONCILED: &str = "CampaignStatusReconciled";
 pub const ACTIVITY_RECORDED: &str = "ActivityRecorded";
 
 // Registry event contract for indexers:
@@ -134,6 +135,28 @@ pub fn campaign_status_updated(
 ) {
     env.events().publish(
         (Symbol::new(env, CAMPAIGN_STATUS_UPDATED), campaign_id),
+        (
+            prev_status,
+            new_status,
+            env.ledger().timestamp(),
+            env.ledger().sequence(),
+        ),
+    );
+}
+
+/// Emitted when `reconcile_campaign_status` finds and corrects drift between
+/// the registry's mirrored status and the escrow contract's real on-chain
+/// status. Distinct from `CampaignStatusUpdated` (normal orchestrator-driven
+/// update) so monitoring can flag drift events separately -- every
+/// occurrence means a registry update was missed upstream.
+pub fn campaign_status_reconciled(
+    env: &Env,
+    campaign_id: u64,
+    prev_status: CampaignStatus,
+    new_status: CampaignStatus,
+) {
+    env.events().publish(
+        (Symbol::new(env, CAMPAIGN_STATUS_RECONCILED), campaign_id),
         (
             prev_status,
             new_status,
