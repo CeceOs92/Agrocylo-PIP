@@ -81,12 +81,15 @@ pub fn get_campaign_record(env: Env, campaign_id: u64) -> Option<CampaignRecord>
 ```
 
 Internal helper functions that mutate an existing record (e.g.
-`fund_campaign`, `resolve_dispute`, `update_campaign_status`) still expect
-the record to exist by that point in the call flow — those unwrap the
-`Option` locally with a descriptive `panic!` message rather than
-propagating it, since the precondition (the record must already exist) is
-part of the contract's internal invariants, not something a caller of the
-public API should have to handle.
+`fund_campaign`, `resolve_dispute`, `update_campaign_status`,
+`reconcile_campaign_status`) still expect the record to exist by that
+point in the call flow — those unwrap the `Option` locally with a
+descriptive `panic!` message rather than propagating it, since the
+precondition (the record must already exist) is part of the contract's
+internal invariants, not something a caller of the public API should
+have to handle. This includes cross-contract calls: `registry`'s
+`reconcile_campaign_status` unwraps the `Option<Campaign>` it gets back
+from `production_escrow::get_campaign` the same way.
 
 New public getters should follow the same `Option<T>` convention.
 
