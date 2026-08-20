@@ -574,6 +574,53 @@ describe('EventParserService', () => {
       );
     });
 
+    it('does not corrupt the title when the mirror tag decodes as a bare string', async () => {
+      await service.processEvent(
+        rawEvent(
+          'e18c',
+          ['CampaignRegistered', CAMPAIGN_ID],
+          [FARMER, 'CampaignCreated', 1700000000n, 13],
+        ),
+      );
+      expect(prisma.campaign.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({ farmer: FARMER, title: '' }),
+        }),
+      );
+    });
+
+    it('does not corrupt the title when the mirror tag decodes as a { tag } object', async () => {
+      await service.processEvent(
+        rawEvent(
+          'e18d',
+          ['CampaignRegistered', CAMPAIGN_ID],
+          [FARMER, { tag: 'CampaignCreated' }, 1700000000n, 13],
+        ),
+      );
+      expect(prisma.campaign.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({ farmer: FARMER, title: '' }),
+        }),
+      );
+    });
+
+    it('keeps a real farmer title that merely contains a variant word', async () => {
+      await service.processEvent(
+        rawEvent(
+          'e18e',
+          ['CampaignRegistered', CAMPAIGN_ID],
+          [FARMER, 'CampaignCreated fundraiser', 1700000000n, 13],
+        ),
+      );
+      expect(prisma.campaign.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            title: 'CampaignCreated fundraiser',
+          }),
+        }),
+      );
+    });
+
     it('logs and skips a malformed payload', async () => {
       await service.processEvent(
         rawEvent('e18-bad', ['CampaignRegistered', CAMPAIGN_ID], [FARMER]),

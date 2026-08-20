@@ -73,6 +73,38 @@ function isTagLike(v: unknown): boolean {
   return false;
 }
 
+/** Variant tags of the registry's `ActivityAction` enum
+ * (contracts/registry/src/types.rs). The activity-log mirror shape places one
+ * of these in the title/name slot of CampaignRegistered/FarmerRegistered
+ * payloads; the direct-call shape never does. This is a fixed, compile-time set,
+ * so matching against it is deterministic regardless of SDK enum-decoding
+ * quirks, unlike `typeof === 'string'`.
+ */
+const ACTIVITY_ACTION_TAGS: ReadonlySet<string> = new Set([
+  'CampaignCreated',
+  'CampaignFunded',
+  'CampaignStatusChanged',
+  'FundsReleased',
+  'HarvestReported',
+  'DisputeInitiated',
+  'DisputeResolved',
+  'CampaignSettled',
+  'FarmerRegistered',
+  'CampaignRegistered',
+]);
+
+/**
+ * True when `v` is an `ActivityAction` enum tag under any of the three documented
+ * decode shapes (bare string, `['Variant']` array, or `{ tag }` object).
+ */
+function isActivityActionTag(v: unknown): boolean {
+  try {
+    return ACTIVITY_ACTION_TAGS.has(decodeTag(v, 'actionType'));
+  } catch {
+    return false;
+  }
+}
+
 @Injectable()
 export class EventParserService {
   private readonly logger = new Logger(EventParserService.name);
@@ -665,8 +697,15 @@ export class EventParserService {
     const farmer = asString(topics[1], 'farmer');
     const timestamp = asNumber(arr[arr.length - 2], 'timestamp');
     const ledgerSequence = asNumber(arr[arr.length - 1], 'ledgerSequence');
-    const nameCandidate = arr.length >= 4 ? arr[1] : undefined;
-    const name = typeof nameCandidate === 'string' ? nameCandidate : undefined;
+    // Direct call: (farmer, name, timestamp, ledger_sequence) - arity 4, name
+    // at slot 1. Activity-log mirror: (actor, timestamp, ledger_sequence) -
+    // arity 3 with no name slot at all, so arity deterministically
+    // disambiguates the two shapes; the tag guard additionally rejects an
+    // ActivityAction tag should one ever land in the name slot.
+    const name =
+      arr.length >= 4 && !isActivityActionTag(arr[1])
+        ? asString(arr[1], 'name')
+        : undefined;
     const data: FarmerRegisteredData = {
       farmer,
       name,
@@ -698,12 +737,20 @@ export class EventParserService {
     const farmer = asString(arr[0], 'farmer');
     const timestamp = asNumber(arr[arr.length - 2], 'timestamp');
     const ledgerSequence = asNumber(arr[arr.length - 1], 'ledgerSequence');
-    // The direct campaign_registered() call publishes a plain-string title in
-    // slot 1; the activity-log mirror publishes an ActivityAction enum tag
-    // there instead. Only trust it as a title when it decoded to a string.
+    // Direct call: (farmer, title, timestamp, ledger_sequence) - slot 1 is a
+    // real title String. Activity-log mirror: (actor, action_type, timestamp,
+    // ledger_sequence) - same arity, but slot 1 is an ActivityAction enum tag.
+    // The enum can decode to a bare string, a ['Variant'] array, or a { tag }
+    // object depending on SDK version, so slot 1 can only be trusted as a title
+    // when it is NOT a known ActivityAction tag - a typeof 'string' test alone
+    // would silently accept a bare-string-decoded tag and corrupt the title.
+    // Both shapes are fixed arity 4, so the tag set is the only deterministic
+    // distinguisher here.
     const titleCandidate = arr[1];
     const title =
-      typeof titleCandidate === 'string' ? titleCandidate : undefined;
+      typeof titleCandidate === 'string' && !isActivityActionTag(titleCandidate)
+        ? titleCandidate
+        : undefined;
     const data: CampaignCreatedData = {
       campaignId,
       farmer,

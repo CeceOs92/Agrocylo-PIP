@@ -146,6 +146,10 @@ pub fn reconcile_campaign_status(env: &Env, campaign_id: u64) -> bool {
     let escrow_campaign = escrow_client
         .get_campaign(&campaign_id)
         .unwrap_or_else(|| panic!("linked escrow campaign not found"));
+    let mut record = storage::get_campaign_record(env, campaign_id);
+
+    let escrow_client = ProductionEscrowContractClient::new(env, &record.escrow_contract);
+    let escrow_campaign = escrow_client.get_campaign(&campaign_id);
     let true_status = map_escrow_status(&escrow_campaign.status);
 
     if record.status == true_status {

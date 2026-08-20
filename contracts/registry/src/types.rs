@@ -52,9 +52,11 @@ pub enum CampaignStatus {
     Funding,
     Funded,
     InProduction,
+    Harvested,
     Disputed,
     Resolved,
     Settled,
+    Failed,
 }
 
 /// Links a campaign to its ProductionEscrowContract instance and crop/region
