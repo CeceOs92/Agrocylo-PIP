@@ -5,6 +5,7 @@ export { CampaignDetailPage } from './CampaignDetailPage';
 export { CreateCampaignPage } from './CreateCampaignPage';
 export { AdminDashboardPage } from './AdminDashboardPage';
 export { ActivityFeedPage } from './ActivityFeedPage';
+export { FarmerProfilePage } from './FarmerProfilePage';
 
 type PlaceholderPageProps = {
   eyebrow: string;
@@ -85,16 +86,7 @@ export function InvestorDashboardPage() {
 }
 
 // ActivityFeedPage is the real implementation exported from ./ActivityFeedPage
-
-export function ProfilePage() {
-  return (
-    <PlaceholderPage
-      eyebrow="Your account"
-      title="Profile"
-      description="Manage your personal details, wallet preferences, and platform settings."
-    />
-  );
-}
+// FarmerProfilePage is the real implementation exported from ./FarmerProfilePage
 
 export function NotFoundPage() {
   return (
