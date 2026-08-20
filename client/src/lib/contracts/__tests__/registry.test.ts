@@ -56,12 +56,8 @@ describe('registry', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCall = vi.fn();
-    vi.mocked(contractClient.getRegistryClient).mockResolvedValue(
-      {} as never,
-    );
-    vi.mocked(contractClient.contractMethod).mockReturnValue(
-      mockCall as never,
-    );
+    vi.mocked(contractClient.getRegistryClient).mockResolvedValue({} as never);
+    vi.mocked(contractClient.contractMethod).mockReturnValue(mockCall as never);
   });
 
   // ── Reads ───────────────────────────────────────────────────
@@ -100,9 +96,7 @@ describe('registry', () => {
 
     it('throws when the contract errors', async () => {
       mockCall.mockRejectedValue(new Error('no activities'));
-      await expect(getCampaignActivities(99n)).rejects.toThrow(
-        'no activities',
-      );
+      await expect(getCampaignActivities(99n)).rejects.toThrow('no activities');
     });
   });
 
