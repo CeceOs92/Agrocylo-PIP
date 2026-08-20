@@ -103,6 +103,11 @@ pub fn emit_campaign_settled(
     investor_returns: i128,
 ) {
     let topics = (Symbol::new(env, "CampaignSettled"), campaign_id);
-    let payload = (farmer, env.ledger().timestamp(), farmer_payout, investor_returns);
+    let payload = (
+        farmer,
+        env.ledger().timestamp(),
+        farmer_payout,
+        investor_returns,
+    );
     env.events().publish(topics, payload);
 }

@@ -82,6 +82,7 @@ pub struct Tranche {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DataKey {
     Admin,
+    Registry,
     Campaign(u64),
     Dispute(u64),
     Contribution(u64, Address),

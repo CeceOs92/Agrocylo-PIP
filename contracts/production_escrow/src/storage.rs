@@ -14,9 +14,11 @@ pub fn extend_instance_ttl(env: &Env) {
 }
 
 fn extend_persistent_ttl(env: &Env, key: &DataKey) {
-    env.storage()
-        .persistent()
-        .extend_ttl(key, PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+    env.storage().persistent().extend_ttl(
+        key,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn has_admin(env: &Env) -> bool {
@@ -29,6 +31,14 @@ pub fn get_admin(env: &Env) -> Address {
 
 pub fn set_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&DataKey::Admin, admin);
+}
+
+pub fn get_registry(env: &Env) -> Option<Address> {
+    env.storage().instance().get(&DataKey::Registry)
+}
+
+pub fn set_registry(env: &Env, registry: &Address) {
+    env.storage().instance().set(&DataKey::Registry, registry);
 }
 
 pub fn has_campaign(env: &Env, campaign_id: u64) -> bool {

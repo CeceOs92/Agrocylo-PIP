@@ -186,8 +186,10 @@ fn emit_activity_index_event(env: &Env, campaign_id: u64, record: &ActivityRecor
             );
         }
         ActivityAction::CampaignCreated | ActivityAction::CampaignRegistered => {
-            env.events()
-                .publish((Symbol::new(env, CAMPAIGN_REGISTERED), campaign_id), payload);
+            env.events().publish(
+                (Symbol::new(env, CAMPAIGN_REGISTERED), campaign_id),
+                payload,
+            );
         }
         ActivityAction::CampaignStatusChanged => {
             env.events().publish(

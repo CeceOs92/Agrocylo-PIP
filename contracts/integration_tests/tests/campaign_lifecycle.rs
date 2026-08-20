@@ -19,11 +19,14 @@ use production_escrow::{
     Campaign, CampaignStatus, DisputeResolution, ProductionEscrowContract,
     ProductionEscrowContractClient,
 };
-use registry::{ActivityAction, CampaignStatus as RegistryCampaignStatus, RegistryContract, RegistryContractClient};
+use registry::{
+    ActivityAction, CampaignStatus as RegistryCampaignStatus, RegistryContract,
+    RegistryContractClient,
+};
 use soroban_sdk::{
     testutils::{Address as _, Events},
     token::{Client as TokenClient, StellarAssetClient},
-    Address, Env, TryFromVal, Symbol,
+    Address, Env, Symbol, TryFromVal,
 };
 
 // ─── shared harness ──────────────────────────────────────────────────────
@@ -175,18 +178,15 @@ fn happy_path_full_lifecycle_settlement() {
         released: false,
     });
     h.escrow.configure_tranches(&h.campaign_id, &tranches);
-    h.escrow.release_tranche(&h.campaign_id, &h.farmer, &200i128);
+    h.escrow
+        .release_tranche(&h.campaign_id, &h.farmer, &200i128);
     assert_eq!(h.campaign().status, CampaignStatus::InProduction);
 
     // IN_PRODUCTION: farmer reports harvest -> Harvested
     let outcome = Symbol::new(&h.env, "good_yield");
-    h.escrow
-        .report_harvest(&h.campaign_id, &h.farmer, &outcome);
-    h.registry.record_activity(
-        &h.campaign_id,
-        &h.farmer,
-        &ActivityAction::HarvestReported,
-    );
+    h.escrow.report_harvest(&h.campaign_id, &h.farmer, &outcome);
+    h.registry
+        .record_activity(&h.campaign_id, &h.farmer, &ActivityAction::HarvestReported);
     assert_eq!(h.campaign().status, CampaignStatus::Harvested);
 
     // SETTLED: admin settles, farmer gets 500, investors share 300 pro-rata.
@@ -218,7 +218,10 @@ fn happy_path_full_lifecycle_settlement() {
     // Cross-contract consistency: registry saw one entry per lifecycle step.
     let activities = h.registry.get_campaign_activities(&h.campaign_id);
     assert_eq!(activities.len(), 5); // created, funded x2, harvested, settled
-    assert_eq!(activities.get(0).unwrap().action_type, ActivityAction::CampaignCreated);
+    assert_eq!(
+        activities.get(0).unwrap().action_type,
+        ActivityAction::CampaignCreated
+    );
     assert_eq!(
         activities.get(3).unwrap().action_type,
         ActivityAction::HarvestReported
@@ -286,8 +289,7 @@ fn disputed_campaign_partial_settlement_flow() {
 
     // Investor disputes the campaign before harvest.
     let reason = Symbol::new(&h.env, "delay");
-    h.escrow
-        .open_dispute(&h.campaign_id, &h.investor1, &reason);
+    h.escrow.open_dispute(&h.campaign_id, &h.investor1, &reason);
     h.registry.record_activity(
         &h.campaign_id,
         &h.investor1,
@@ -346,13 +348,9 @@ fn registry_activity_log_tracks_every_escrow_transition() {
     assert_eq!(h.activity_count(), 3); // + funded x2
 
     let outcome = Symbol::new(&h.env, "average_yield");
-    h.escrow
-        .report_harvest(&h.campaign_id, &h.farmer, &outcome);
-    h.registry.record_activity(
-        &h.campaign_id,
-        &h.farmer,
-        &ActivityAction::HarvestReported,
-    );
+    h.escrow.report_harvest(&h.campaign_id, &h.farmer, &outcome);
+    h.registry
+        .record_activity(&h.campaign_id, &h.farmer, &ActivityAction::HarvestReported);
     assert_eq!(h.activity_count(), 4);
 
     h.escrow
@@ -368,13 +366,8 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     let h = Harness::new();
     let crop = Symbol::new(&h.env, "maize");
     let region = Symbol::new(&h.env, "central");
-    h.registry.link_campaign_escrow(
-        &h.campaign_id,
-        &h.farmer,
-        &h.escrow.address,
-        &crop,
-        &region,
-    );
+    h.registry
+        .link_campaign_escrow(&h.campaign_id, &h.farmer, &h.escrow.address, &crop, &region);
     assert_eq!(
         h.registry.get_campaign_record(&h.campaign_id).status,
         RegistryCampaignStatus::Active
@@ -436,3 +429,72 @@ fn contract_emitted(env: &Env, contract_id: &Address, topic_name: &str) -> bool 
                 .unwrap_or(false)
     })
 }
+
+// ─── on-chain escrow -> registry wiring (issue #96) ─────────────────────
+
+/// With `set_registry` configured and the escrow contract approved, escrow
+/// lifecycle calls alone (no manual `record_activity`/`update_campaign_status`
+/// from the test, unlike `Harness` above) populate the registry's activity
+/// log and status mirror.
+#[test]
+fn escrow_wired_to_registry_populates_activity_and_status() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let escrow_id = env.register_contract(None, ProductionEscrowContract);
+    let escrow = ProductionEscrowContractClient::new(&env, &escrow_id);
+    let registry_id = env.register_contract(None, RegistryContract);
+    let registry = RegistryContractClient::new(&env, &registry_id);
+
+    let admin = Address::generate(&env);
+    let farmer = Address::generate(&env);
+    let investor = Address::generate(&env);
+
+    let token_admin = env.register_stellar_asset_contract_v2(admin.clone());
+    let token = token_admin.address();
+    StellarAssetClient::new(&env, &token).mint(&investor, &1000i128);
+
+    registry.initialize(&admin);
+    registry.approve_contract(&escrow_id);
+    escrow.initialize(&admin);
+    escrow.set_registry(&registry_id);
+
+    let campaign_id = 1u64;
+    escrow.create_campaign(
+        &campaign_id,
+        &farmer,
+        &1000i128,
+        &token,
+        &1_000_000u64,
+        &Symbol::new(&env, "maize"),
+    );
+    escrow.fund_campaign(&campaign_id, &investor, &1000i128);
+
+    // create_campaign -> link + CampaignCreated, fund_campaign (Funded) -> CampaignFunded + status sync.
+    let activities = registry.get_campaign_activities(&campaign_id);
+    assert_eq!(activities.len(), 2);
+    assert_eq!(
+        activities.get(0).unwrap().action_type,
+        ActivityAction::CampaignCreated
+    );
+    assert_eq!(
+        activities.get(1).unwrap().action_type,
+        ActivityAction::CampaignFunded
+    );
+
+    let record = registry.get_campaign_record(&campaign_id);
+    assert_eq!(record.status, RegistryCampaignStatus::Funded);
+}
+
+// NOTE: a test asserting that an unapproved escrow contract's registry calls
+// panic predictably was attempted here and removed -- it does not currently
+// hold. `link_campaign_escrow`'s `is_contract_approved` check only decides
+// *who* must authorize (the escrow itself vs. the farmer), and since
+// `create_campaign` already carries the farmer's auth, an unapproved escrow
+// still links successfully. `update_campaign_status` afterwards only checks
+// `caller == record.escrow_contract`, which the escrow itself always
+// satisfies regardless of the approved-contracts list. So today, approval
+// gates nothing an escrow contract can't already do to its own linked
+// campaigns via self-authorization. This is a real gap worth a follow-up
+// (e.g. `update_campaign_status` additionally requiring
+// `is_contract_approved(escrow_contract)`), not something fixed here.

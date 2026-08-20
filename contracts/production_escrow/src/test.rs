@@ -220,19 +220,13 @@ fn test_fund_campaign_emits_contribution_and_funded_events() {
     let funded_event = events
         .iter()
         .rev()
-        .find(|e| {
-            e.1 == (Symbol::new(&s.env, "CampaignFunded"), s.campaign_id)
-                .into_val(&s.env)
-        });
+        .find(|e| e.1 == (Symbol::new(&s.env, "CampaignFunded"), s.campaign_id).into_val(&s.env));
     assert!(funded_event.is_some(), "CampaignFunded event not emitted");
 
     let contrib_event = events
         .iter()
         .rev()
-        .find(|e| {
-            e.1 == (Symbol::new(&s.env, "ContribReceived"), s.campaign_id)
-                .into_val(&s.env)
-        });
+        .find(|e| e.1 == (Symbol::new(&s.env, "ContribReceived"), s.campaign_id).into_val(&s.env));
     assert!(contrib_event.is_some(), "ContribReceived event not emitted");
 }
 
@@ -295,7 +289,8 @@ fn test_fund_campaign_non_active_status_fails() {
     let extra_investor = Address::generate(&s.env);
     let (_, sac) = create_token(&s.env, &s.admin);
     sac.mint(&extra_investor, &100i128);
-    s.client.fund_campaign(&s.campaign_id, &extra_investor, &100i128);
+    s.client
+        .fund_campaign(&s.campaign_id, &extra_investor, &100i128);
 }
 
 // ─── configure_tranches tests ────────────────────────────────────────────────
@@ -421,13 +416,14 @@ fn test_receive_contribution_emits_distinct_reconciled_event() {
         .count();
     let received_count = events
         .iter()
-        .filter(|e| {
-            e.1 == (Symbol::new(&s.env, "ContribReceived"), s.campaign_id).into_val(&s.env)
-        })
+        .filter(|e| e.1 == (Symbol::new(&s.env, "ContribReceived"), s.campaign_id).into_val(&s.env))
         .count();
 
     assert_eq!(reconciled_count, 2, "expected 2 ContribReconciled events");
-    assert_eq!(received_count, 0, "receive_contribution must not emit ContribReceived");
+    assert_eq!(
+        received_count, 0,
+        "receive_contribution must not emit ContribReceived"
+    );
 }
 
 /// No regression: the legitimate reconciliation flow (real tokens already in
@@ -581,13 +577,9 @@ fn test_configure_tranches_emits_event() {
     s.client.configure_tranches(&s.campaign_id, &tranches);
 
     let events = s.env.events().all();
-    let event = events
-        .iter()
-        .rev()
-        .find(|e| {
-            e.1 == (Symbol::new(&s.env, "TranchesConfigured"), s.campaign_id)
-                .into_val(&s.env)
-        });
+    let event = events.iter().rev().find(|e| {
+        e.1 == (Symbol::new(&s.env, "TranchesConfigured"), s.campaign_id).into_val(&s.env)
+    });
     assert!(event.is_some());
 }
 
@@ -604,7 +596,11 @@ fn test_configure_tranches_on_active_campaign_fails() {
 
     client.initialize(&admin);
     client.create_campaign(
-        &1u64, &farmer, &1000i128, &token, &1000000u64,
+        &1u64,
+        &farmer,
+        &1000i128,
+        &token,
+        &1000000u64,
         &Symbol::new(&env, "corn"),
     );
 
@@ -638,28 +634,30 @@ fn test_configure_tranches_unauthorized_fails() {
 #[test]
 fn test_release_tranche_updates_accounting() {
     let s = funded_campaign();
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &300i128);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &300i128);
 
     let campaign = s.client.get_campaign(&s.campaign_id);
     assert_eq!(campaign.released, 300);
     // escrow_held = 1000 - 300 - 0 = 700
-    assert_eq!(campaign.total_funded - campaign.released - campaign.refundable, 700);
+    assert_eq!(
+        campaign.total_funded - campaign.released - campaign.refundable,
+        700
+    );
     assert_eq!(campaign.status, CampaignStatus::InProduction);
 }
 
 #[test]
 fn test_release_tranche_emits_event() {
     let s = funded_campaign();
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &200i128);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &200i128);
 
     let events = s.env.events().all();
     let event = events
         .iter()
         .rev()
-        .find(|e| {
-            e.1 == (Symbol::new(&s.env, "TrancheReleased"), s.campaign_id)
-                .into_val(&s.env)
-        });
+        .find(|e| e.1 == (Symbol::new(&s.env, "TrancheReleased"), s.campaign_id).into_val(&s.env));
     assert!(event.is_some());
 }
 
@@ -671,7 +669,8 @@ fn test_release_tranche_with_configured_tranches_marks_released() {
     tranches.push_back(make_tranche(&s.env, 600, "harvest"));
     s.client.configure_tranches(&s.campaign_id, &tranches);
 
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &400i128);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &400i128);
 
     let stored = s.client.get_tranches(&s.campaign_id);
     assert!(stored.get(0).unwrap().released);
@@ -683,36 +682,30 @@ fn test_release_tranche_with_configured_tranches_marks_released() {
 fn test_release_tranche_over_release_prevented() {
     let s = funded_campaign();
     // Try to release more than escrowed.
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &1001i128);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &1001i128);
 }
 
 #[test]
 #[should_panic(expected = "cannot release tranche: campaign is in a terminal state")]
 fn test_release_tranche_blocked_for_disputed_campaign() {
     let s = funded_campaign();
-    s.client.open_dispute(
-        &s.campaign_id,
-        &s.investor1,
-        &Symbol::new(&s.env, "Delay"),
-    );
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &100i128);
+    s.client
+        .open_dispute(&s.campaign_id, &s.investor1, &Symbol::new(&s.env, "Delay"));
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &100i128);
 }
 
 #[test]
 #[should_panic(expected = "cannot release tranche: campaign is in a terminal state")]
 fn test_release_tranche_blocked_for_resolved_campaign() {
     let s = funded_campaign();
-    s.client.open_dispute(
-        &s.campaign_id,
-        &s.investor1,
-        &Symbol::new(&s.env, "Delay"),
-    );
-    s.client.resolve_dispute(
-        &s.campaign_id,
-        &DisputeResolution::FullRefund,
-        &0i128,
-    );
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &100i128);
+    s.client
+        .open_dispute(&s.campaign_id, &s.investor1, &Symbol::new(&s.env, "Delay"));
+    s.client
+        .resolve_dispute(&s.campaign_id, &DisputeResolution::FullRefund, &0i128);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &100i128);
 }
 
 #[test]
@@ -721,8 +714,10 @@ fn test_release_tranche_blocked_for_settled_campaign() {
     let s = token_funded_campaign();
     s.client
         .report_harvest(&s.campaign_id, &s.farmer, &Symbol::new(&s.env, "ok"));
-    s.client.settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &100i128);
+    s.client
+        .settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &100i128);
 }
 
 #[test]
@@ -730,7 +725,8 @@ fn test_release_tranche_blocked_for_settled_campaign() {
 fn test_release_tranche_unauthorized_non_admin_fails() {
     let s = funded_campaign();
     s.env.mock_auths(&[]); // no admin auth
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &100i128);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &100i128);
 }
 
 #[test]
@@ -744,7 +740,8 @@ fn test_release_tranche_amount_not_matching_any_tranche_fails() {
     s.client.configure_tranches(&s.campaign_id, &tranches);
 
     // 250 does not match any configured tranche amount.
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &250i128);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &250i128);
 }
 
 /// When an amount matches a tranche that has already been released, the
@@ -760,7 +757,8 @@ fn test_release_tranche_already_released_amount_skips_to_next_match() {
     s.client.configure_tranches(&s.campaign_id, &tranches);
 
     // Release the first 300 tranche.
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &300i128);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &300i128);
     let stored = s.client.get_tranches(&s.campaign_id);
     assert!(stored.get(0).unwrap().released);
     assert!(!stored.get(1).unwrap().released);
@@ -768,7 +766,8 @@ fn test_release_tranche_already_released_amount_skips_to_next_match() {
 
     // Release 300 again — should skip the first (already released) tranche
     // and mark the second 300 tranche as released.
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &300i128);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &300i128);
     let stored = s.client.get_tranches(&s.campaign_id);
     assert!(stored.get(0).unwrap().released);
     assert!(stored.get(1).unwrap().released);
@@ -785,13 +784,17 @@ fn test_release_tranche_duplicate_amounts_releases_earliest_first() {
     tranches.push_back(make_tranche(&s.env, 500, "phase2"));
     s.client.configure_tranches(&s.campaign_id, &tranches);
 
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &500i128);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &500i128);
 
     let stored = s.client.get_tranches(&s.campaign_id);
     // The first (earliest) tranche should be marked, not the second.
     assert!(stored.get(0).unwrap().released);
     assert!(!stored.get(1).unwrap().released);
-    assert_eq!(stored.get(0).unwrap().milestone, Symbol::new(&s.env, "phase1"));
+    assert_eq!(
+        stored.get(0).unwrap().milestone,
+        Symbol::new(&s.env, "phase1")
+    );
 }
 
 // ─── existing tests (unchanged) ──────────────────────────────────────────────
@@ -859,8 +862,11 @@ fn test_resolve_partial_settlement() {
     let s = funded_campaign();
     s.client
         .open_dispute(&s.campaign_id, &s.investor1, &Symbol::new(&s.env, "Delay"));
-    s.client
-        .resolve_dispute(&s.campaign_id, &DisputeResolution::PartialSettlement, &300i128);
+    s.client.resolve_dispute(
+        &s.campaign_id,
+        &DisputeResolution::PartialSettlement,
+        &300i128,
+    );
 
     let campaign = s.client.get_campaign(&s.campaign_id);
     assert_eq!(campaign.released, 300);
@@ -900,7 +906,8 @@ fn test_disputed_campaign_blocks_settlement() {
     let s = funded_campaign();
     s.client
         .open_dispute(&s.campaign_id, &s.investor1, &Symbol::new(&s.env, "Delay"));
-    s.client.settle_campaign(&s.campaign_id, &s.farmer, &500i128);
+    s.client
+        .settle_campaign(&s.campaign_id, &s.farmer, &500i128);
 }
 
 #[test]
@@ -927,7 +934,10 @@ fn test_claim_refund_full_refund_returns_contribution() {
     );
 
     // Double-claim is blocked.
-    assert!(s.client.try_claim_refund(&s.campaign_id, &s.investor1).is_err());
+    assert!(s
+        .client
+        .try_claim_refund(&s.campaign_id, &s.investor1)
+        .is_err());
 }
 
 #[test]
@@ -936,8 +946,11 @@ fn test_claim_refund_partial_settlement_is_pro_rata() {
     let s = token_funded_campaign();
     s.client
         .open_dispute(&s.campaign_id, &s.investor1, &Symbol::new(&s.env, "Delay"));
-    s.client
-        .resolve_dispute(&s.campaign_id, &DisputeResolution::PartialSettlement, &300i128);
+    s.client.resolve_dispute(
+        &s.campaign_id,
+        &DisputeResolution::PartialSettlement,
+        &300i128,
+    );
 
     let token = TokenClient::new(&s.env, &s.token);
     let inv1_before = token.balance(&s.investor1);
@@ -949,20 +962,28 @@ fn test_claim_refund_partial_settlement_is_pro_rata() {
     assert_eq!(token.balance(&s.investor1), inv1_before + 420);
     assert_eq!(token.balance(&s.investor2), inv2_before + 280);
 
-    assert!(s.client.try_claim_refund(&s.campaign_id, &s.investor1).is_err());
-    assert!(s.client.try_claim_refund(&s.campaign_id, &s.investor2).is_err());
+    assert!(s
+        .client
+        .try_claim_refund(&s.campaign_id, &s.investor1)
+        .is_err());
+    assert!(s
+        .client
+        .try_claim_refund(&s.campaign_id, &s.investor2)
+        .is_err());
 }
 
 #[test]
 fn test_happy_path_settlement() {
     let s = token_funded_campaign();
-    s.client.report_harvest(&s.campaign_id, &s.farmer, &Symbol::new(&s.env, "good"));
+    s.client
+        .report_harvest(&s.campaign_id, &s.farmer, &Symbol::new(&s.env, "good"));
 
     let token = TokenClient::new(&s.env, &s.token);
     let farmer_before = token.balance(&s.farmer);
 
     // farmer gets 1000, investors get 0 returns
-    s.client.settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
+    s.client
+        .settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
 
     let campaign = s.client.get_campaign(&s.campaign_id);
     assert_eq!(campaign.released, 1000);
@@ -984,8 +1005,12 @@ fn test_create_campaign_successful() {
 
     client.initialize(&admin);
     client.create_campaign(
-        &campaign_id, &farmer, &5000i128, &token_address,
-        &2000000u64, &Symbol::new(&env, "wheat"),
+        &campaign_id,
+        &farmer,
+        &5000i128,
+        &token_address,
+        &2000000u64,
+        &Symbol::new(&env, "wheat"),
     );
 
     let campaign = client.get_campaign(&campaign_id);
@@ -1006,8 +1031,22 @@ fn test_create_campaign_duplicate_id_fails() {
     let token = Address::generate(&env);
 
     client.initialize(&admin);
-    client.create_campaign(&1u64, &farmer, &1000i128, &token, &1000000u64, &Symbol::new(&env, "corn"));
-    client.create_campaign(&1u64, &farmer, &1000i128, &token, &1000000u64, &Symbol::new(&env, "corn"));
+    client.create_campaign(
+        &1u64,
+        &farmer,
+        &1000i128,
+        &token,
+        &1000000u64,
+        &Symbol::new(&env, "corn"),
+    );
+    client.create_campaign(
+        &1u64,
+        &farmer,
+        &1000i128,
+        &token,
+        &1000000u64,
+        &Symbol::new(&env, "corn"),
+    );
 }
 
 #[test]
@@ -1022,7 +1061,14 @@ fn test_create_campaign_zero_target_fails() {
     let token = Address::generate(&env);
 
     client.initialize(&admin);
-    client.create_campaign(&1u64, &farmer, &0i128, &token, &1000000u64, &Symbol::new(&env, "soy"));
+    client.create_campaign(
+        &1u64,
+        &farmer,
+        &0i128,
+        &token,
+        &1000000u64,
+        &Symbol::new(&env, "soy"),
+    );
 }
 
 #[test]
@@ -1037,7 +1083,14 @@ fn test_create_campaign_negative_target_fails() {
     let token = Address::generate(&env);
 
     client.initialize(&admin);
-    client.create_campaign(&1u64, &farmer, &-500i128, &token, &1000000u64, &Symbol::new(&env, "barley"));
+    client.create_campaign(
+        &1u64,
+        &farmer,
+        &-500i128,
+        &token,
+        &1000000u64,
+        &Symbol::new(&env, "barley"),
+    );
 }
 
 #[test]
@@ -1051,7 +1104,14 @@ fn test_create_campaign_emits_event() {
     let token = Address::generate(&env);
 
     client.initialize(&admin);
-    client.create_campaign(&123u64, &farmer, &2500i128, &token, &1500000u64, &Symbol::new(&env, "oats"));
+    client.create_campaign(
+        &123u64,
+        &farmer,
+        &2500i128,
+        &token,
+        &1500000u64,
+        &Symbol::new(&env, "oats"),
+    );
 
     let events = env.events().all();
     let event = events.last().unwrap();
@@ -1098,9 +1158,7 @@ fn test_report_harvest_emits_event() {
     let event = events
         .iter()
         .rev()
-        .find(|e| {
-            e.1 == (Symbol::new(&s.env, "HarvestReported"), s.campaign_id).into_val(&s.env)
-        });
+        .find(|e| e.1 == (Symbol::new(&s.env, "HarvestReported"), s.campaign_id).into_val(&s.env));
     assert!(event.is_some(), "HarvestReported event not emitted");
 }
 
@@ -1109,7 +1167,8 @@ fn test_report_harvest_emits_event() {
 fn test_report_harvest_unauthorized_fails() {
     let s = token_funded_campaign();
     let stranger = Address::generate(&s.env);
-    s.client.report_harvest(&s.campaign_id, &stranger, &Symbol::new(&s.env, "good"));
+    s.client
+        .report_harvest(&s.campaign_id, &stranger, &Symbol::new(&s.env, "good"));
 }
 
 #[test]
@@ -1126,7 +1185,11 @@ fn test_report_harvest_on_unfunded_campaign_fails() {
 
     client.initialize(&admin);
     client.create_campaign(
-        &1u64, &farmer, &1000i128, &token, &1000000u64,
+        &1u64,
+        &farmer,
+        &1000i128,
+        &token,
+        &1000000u64,
         &Symbol::new(&env, "corn"),
     );
     // Campaign is Active, not Funded.
@@ -1139,7 +1202,9 @@ fn test_report_harvest_on_unfunded_campaign_fails() {
 fn test_settle_campaign_requires_harvested() {
     // A Funded campaign (not yet harvested) should panic.
     let s = token_funded_campaign();
-    let result = s.client.try_settle_campaign(&s.campaign_id, &s.farmer, &500i128);
+    let result = s
+        .client
+        .try_settle_campaign(&s.campaign_id, &s.farmer, &500i128);
     assert!(result.is_err());
 }
 
@@ -1155,7 +1220,8 @@ fn test_settle_campaign_distributes_returns_to_investors() {
     let inv2_before = token.balance(&s.investor2);
 
     // Farmer gets 400; investors share 600 proportionally.
-    s.client.settle_campaign(&s.campaign_id, &s.farmer, &400i128);
+    s.client
+        .settle_campaign(&s.campaign_id, &s.farmer, &400i128);
 
     let campaign = s.client.get_campaign(&s.campaign_id);
     assert_eq!(campaign.released, 400);
@@ -1181,7 +1247,8 @@ fn test_settle_campaign_full_payout_to_farmer() {
     let token = TokenClient::new(&s.env, &s.token);
     let farmer_before = token.balance(&s.farmer);
 
-    s.client.settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
+    s.client
+        .settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
 
     let campaign = s.client.get_campaign(&s.campaign_id);
     assert_eq!(campaign.released, 1000);
@@ -1190,7 +1257,10 @@ fn test_settle_campaign_full_payout_to_farmer() {
     assert_eq!(token.balance(&s.farmer), farmer_before + 1000);
 
     // No returns to claim.
-    assert!(s.client.try_claim_return(&s.campaign_id, &s.investor1).is_err());
+    assert!(s
+        .client
+        .try_claim_return(&s.campaign_id, &s.investor1)
+        .is_err());
 }
 
 #[test]
@@ -1198,10 +1268,13 @@ fn test_settle_cannot_be_executed_twice() {
     let s = token_funded_campaign();
     s.client
         .report_harvest(&s.campaign_id, &s.farmer, &Symbol::new(&s.env, "good"));
-    s.client.settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
+    s.client
+        .settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
 
     // Campaign is now Settled — a second call must fail.
-    let result = s.client.try_settle_campaign(&s.campaign_id, &s.farmer, &0i128);
+    let result = s
+        .client
+        .try_settle_campaign(&s.campaign_id, &s.farmer, &0i128);
     assert!(result.is_err());
 }
 
@@ -1210,15 +1283,14 @@ fn test_settle_emits_campaign_settled_event() {
     let s = token_funded_campaign();
     s.client
         .report_harvest(&s.campaign_id, &s.farmer, &Symbol::new(&s.env, "good"));
-    s.client.settle_campaign(&s.campaign_id, &s.farmer, &700i128);
+    s.client
+        .settle_campaign(&s.campaign_id, &s.farmer, &700i128);
 
     let events = s.env.events().all();
     let event = events
         .iter()
         .rev()
-        .find(|e| {
-            e.1 == (Symbol::new(&s.env, "CampaignSettled"), s.campaign_id).into_val(&s.env)
-        });
+        .find(|e| e.1 == (Symbol::new(&s.env, "CampaignSettled"), s.campaign_id).into_val(&s.env));
     assert!(event.is_some(), "CampaignSettled event not emitted");
 }
 
@@ -1242,8 +1314,12 @@ fn test_mark_failed_sets_refundable_and_status() {
 
     client.initialize(&admin);
     client.create_campaign(
-        &campaign_id, &farmer, &1000i128, &token_address,
-        &1000000u64, &Symbol::new(&env, "rice"),
+        &campaign_id,
+        &farmer,
+        &1000i128,
+        &token_address,
+        &1000000u64,
+        &Symbol::new(&env, "rice"),
     );
     client.fund_campaign(&campaign_id, &investor, &500i128);
 
@@ -1269,7 +1345,11 @@ fn test_mark_failed_emits_event() {
 
     client.initialize(&admin);
     client.create_campaign(
-        &1u64, &farmer, &1000i128, &token, &1000000u64,
+        &1u64,
+        &farmer,
+        &1000i128,
+        &token,
+        &1000000u64,
         &Symbol::new(&env, "corn"),
     );
     client.mark_failed(&1u64);
@@ -1288,7 +1368,8 @@ fn test_mark_failed_settled_campaign_fails() {
     let s = token_funded_campaign();
     s.client
         .report_harvest(&s.campaign_id, &s.farmer, &Symbol::new(&s.env, "ok"));
-    s.client.settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
+    s.client
+        .settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
     s.client.mark_failed(&s.campaign_id);
 }
 
@@ -1314,8 +1395,12 @@ fn test_claim_refund_after_failed_returns_tokens() {
 
     client.initialize(&admin);
     client.create_campaign(
-        &campaign_id, &farmer, &1000i128, &token_address,
-        &1000000u64, &Symbol::new(&env, "wheat"),
+        &campaign_id,
+        &farmer,
+        &1000i128,
+        &token_address,
+        &1000000u64,
+        &Symbol::new(&env, "wheat"),
     );
     client.fund_campaign(&campaign_id, &investor1, &600i128);
     client.fund_campaign(&campaign_id, &investor2, &400i128);
@@ -1347,7 +1432,11 @@ fn test_claim_refund_blocks_active_campaign() {
 
     client.initialize(&admin);
     client.create_campaign(
-        &1u64, &farmer, &1000i128, &token, &1000000u64,
+        &1u64,
+        &farmer,
+        &1000i128,
+        &token,
+        &1000000u64,
         &Symbol::new(&env, "soy"),
     );
 
@@ -1373,8 +1462,12 @@ fn test_double_refund_is_blocked() {
 
     client.initialize(&admin);
     client.create_campaign(
-        &campaign_id, &farmer, &1000i128, &token_address,
-        &1000000u64, &Symbol::new(&env, "corn"),
+        &campaign_id,
+        &farmer,
+        &1000i128,
+        &token_address,
+        &1000000u64,
+        &Symbol::new(&env, "corn"),
     );
     client.fund_campaign(&campaign_id, &investor, &1000i128);
     client.mark_failed(&campaign_id);
@@ -1390,18 +1483,19 @@ fn test_claim_return_blocks_non_settled_campaign() {
     let s = token_funded_campaign(); // status = Active/Funded, not Settled
 
     let result = s.client.try_claim_return(&s.campaign_id, &s.investor1);
-    assert!(result.is_err(), "expected error claiming return on non-settled campaign");
+    assert!(
+        result.is_err(),
+        "expected error claiming return on non-settled campaign"
+    );
 }
 #[test]
 fn test_claim_return_is_pro_rata() {
     let s = token_funded_campaign();
 
-    s.client.report_harvest(
-        &s.campaign_id,
-        &s.farmer,
-        &Symbol::new(&s.env, "good"),
-    );
-    s.client.settle_campaign(&s.campaign_id, &s.farmer, &400i128);
+    s.client
+        .report_harvest(&s.campaign_id, &s.farmer, &Symbol::new(&s.env, "good"));
+    s.client
+        .settle_campaign(&s.campaign_id, &s.farmer, &400i128);
 
     let token = TokenClient::new(&s.env, &s.token);
     let inv1_before = token.balance(&s.investor1);
@@ -1412,19 +1506,20 @@ fn test_claim_return_is_pro_rata() {
 
     assert_eq!(token.balance(&s.investor1), inv1_before + 360);
     assert_eq!(token.balance(&s.investor2), inv2_before + 240);
-    assert!((360 + 240) <= 600, "sum of claims must be less than return pool");
+    assert!(
+        (360 + 240) <= 600,
+        "sum of claims must be less than return pool"
+    );
 }
 
 #[test]
 fn test_double_claim_return_is_blocked() {
     let s = token_funded_campaign();
 
-    s.client.report_harvest(
-        &s.campaign_id,
-        &s.farmer,
-        &Symbol::new(&s.env, "good"),
-    );
-    s.client.settle_campaign(&s.campaign_id, &s.farmer, &400i128);
+    s.client
+        .report_harvest(&s.campaign_id, &s.farmer, &Symbol::new(&s.env, "good"));
+    s.client
+        .settle_campaign(&s.campaign_id, &s.farmer, &400i128);
 
     let token = TokenClient::new(&s.env, &s.token);
     let inv1_before = token.balance(&s.investor1);
@@ -1433,7 +1528,10 @@ fn test_double_claim_return_is_blocked() {
     assert_eq!(token.balance(&s.investor1), inv1_before + 360);
 
     let result = s.client.try_claim_return(&s.campaign_id, &s.investor1);
-    assert!(result.is_err(), "double claim_return should be rejected, contribution is zeroed");
+    assert!(
+        result.is_err(),
+        "double claim_return should be rejected, contribution is zeroed"
+    );
 
     // Balance should not change
     assert_eq!(token.balance(&s.investor1), inv1_before + 360);
@@ -1480,16 +1578,8 @@ fn test_claim_refund_truncation_dust_remains_in_contract() {
     client.fund_campaign(&campaign_id, &investor3, &333i128);
 
     // Partial settlement via dispute: 1 stroop to farmer, 999 refundable.
-    client.open_dispute(
-        &campaign_id,
-        &investor1,
-        &Symbol::new(&env, "Delay"),
-    );
-    client.resolve_dispute(
-        &campaign_id,
-        &DisputeResolution::PartialSettlement,
-        &1i128,
-    );
+    client.open_dispute(&campaign_id, &investor1, &Symbol::new(&env, "Delay"));
+    client.resolve_dispute(&campaign_id, &DisputeResolution::PartialSettlement, &1i128);
 
     let token = TokenClient::new(&env, &token_address);
     let inv1_before = token.balance(&investor1);
@@ -1578,25 +1668,36 @@ fn test_claim_return_truncation_dust_remains_in_contract() {
 #[test]
 fn test_open_dispute_in_production() {
     let s = funded_campaign();
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &300i128);
-    assert_eq!(s.client.get_campaign(&s.campaign_id).status, CampaignStatus::InProduction);
-
-    s.client.open_dispute(
-        &s.campaign_id,
-        &s.investor1,
-        &Symbol::new(&s.env, "Delay"),
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &300i128);
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::InProduction
     );
-    assert_eq!(s.client.get_campaign(&s.campaign_id).status, CampaignStatus::Disputed);
+
+    s.client
+        .open_dispute(&s.campaign_id, &s.investor1, &Symbol::new(&s.env, "Delay"));
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::Disputed
+    );
 }
 
 #[test]
 fn test_mark_failed_in_production() {
     let s = token_funded_campaign();
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &300i128);
-    assert_eq!(s.client.get_campaign(&s.campaign_id).status, CampaignStatus::InProduction);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &300i128);
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::InProduction
+    );
 
     s.client.mark_failed(&s.campaign_id);
-    assert_eq!(s.client.get_campaign(&s.campaign_id).status, CampaignStatus::Failed);
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).status,
+        CampaignStatus::Failed
+    );
 }
 
 #[test]
