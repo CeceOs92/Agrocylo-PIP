@@ -120,7 +120,8 @@ impl ProductionEscrowContract {
 
         investor.require_auth();
 
-        let mut campaign = storage::get_campaign(&env, campaign_id);
+        let mut campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
         if campaign.status != CampaignStatus::Active
             && campaign.status != CampaignStatus::Funding
         {
@@ -180,7 +181,8 @@ impl ProductionEscrowContract {
 
         require_admin(&env);
 
-        let mut campaign = storage::get_campaign(&env, campaign_id);
+        let mut campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
 
         // Second signer: the campaign's farmer must also authorize, so a
         // lone compromised/malicious admin key cannot fabricate contributions.
@@ -217,7 +219,8 @@ impl ProductionEscrowContract {
     pub fn complete_funding(env: Env, campaign_id: u64, total_funded: i128) {
         require_admin(&env);
 
-        let mut campaign = storage::get_campaign(&env, campaign_id);
+        let mut campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
         if campaign.status != CampaignStatus::Active
             && campaign.status != CampaignStatus::Funding
         {
@@ -242,7 +245,8 @@ impl ProductionEscrowContract {
     pub fn configure_tranches(env: Env, campaign_id: u64, tranches: Vec<Tranche>) {
         require_admin(&env);
 
-        let campaign = storage::get_campaign(&env, campaign_id);
+        let campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
         if campaign.status != CampaignStatus::Funded {
             panic!("can only configure tranches for a funded campaign");
         }
@@ -277,7 +281,8 @@ impl ProductionEscrowContract {
 
         require_admin(&env);
 
-        let mut campaign = storage::get_campaign(&env, campaign_id);
+        let mut campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
 
         if is_terminal(&campaign.status) {
             panic!("cannot release tranche: campaign is in a terminal state");
@@ -324,7 +329,8 @@ impl ProductionEscrowContract {
     /// Farmer reports the harvest outcome, moving the campaign to Harvested.
     /// Only the campaign farmer or admin may call this.
     pub fn report_harvest(env: Env, campaign_id: u64, farmer: Address, outcome: Symbol) {
-        let mut campaign = storage::get_campaign(&env, campaign_id);
+        let mut campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
 
         let is_admin = storage::has_admin(&env) && storage::get_admin(&env) == farmer;
         if campaign.farmer != farmer && !is_admin {
@@ -352,7 +358,8 @@ impl ProductionEscrowContract {
     }
 
     pub fn open_dispute(env: Env, campaign_id: u64, opener: Address, reason: Symbol) {
-        let mut campaign = storage::get_campaign(&env, campaign_id);
+        let mut campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
         if campaign.status != CampaignStatus::Active
             && campaign.status != CampaignStatus::Funding
             && campaign.status != CampaignStatus::Funded
@@ -397,11 +404,13 @@ impl ProductionEscrowContract {
     ) {
         require_admin(&env);
 
-        let mut campaign = storage::get_campaign(&env, campaign_id);
+        let mut campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
         if campaign.status != CampaignStatus::Disputed {
             panic!("campaign not disputed");
         }
-        let mut dispute = storage::get_dispute(&env, campaign_id);
+        let mut dispute = storage::get_dispute(&env, campaign_id)
+            .unwrap_or_else(|| panic!("dispute not found"));
         if dispute.status != DisputeStatus::Open {
             panic!("dispute already resolved");
         }
@@ -464,7 +473,8 @@ impl ProductionEscrowContract {
     /// Across many investors the accumulated dust is typically negligible, but
     /// integrators should be aware that `sum(claimed) <= refundable`.
     pub fn claim_refund(env: Env, campaign_id: u64, investor: Address) {
-        let campaign = storage::get_campaign(&env, campaign_id);
+        let campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
         if campaign.status != CampaignStatus::Resolved
             && campaign.status != CampaignStatus::Failed
         {
@@ -500,7 +510,8 @@ impl ProductionEscrowContract {
 
         require_admin(&env);
 
-        let mut campaign = storage::get_campaign(&env, campaign_id);
+        let mut campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
         if campaign.status == CampaignStatus::Disputed {
             panic!("campaign is disputed");
         }
@@ -533,7 +544,8 @@ impl ProductionEscrowContract {
     pub fn mark_failed(env: Env, campaign_id: u64) {
         require_admin(&env);
 
-        let mut campaign = storage::get_campaign(&env, campaign_id);
+        let mut campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
         if campaign.status != CampaignStatus::Active
             && campaign.status != CampaignStatus::Funding
             && campaign.status != CampaignStatus::Funded
@@ -560,7 +572,8 @@ impl ProductionEscrowContract {
     /// Across many investors the accumulated dust is typically negligible, but
     /// integrators should be aware that `sum(claimed) <= returnable`.
     pub fn claim_return(env: Env, campaign_id: u64, investor: Address) {
-        let campaign = storage::get_campaign(&env, campaign_id);
+        let campaign = storage::get_campaign(&env, campaign_id)
+            .unwrap_or_else(|| panic!("campaign not found"));
         if campaign.status != CampaignStatus::Settled {
             panic!("campaign not settled");
         }
@@ -584,11 +597,11 @@ impl ProductionEscrowContract {
         storage::extend_instance_ttl(&env);
         emit_return_claimed(&env, campaign_id, investor, share);
     }
-    pub fn get_campaign(env: Env, campaign_id: u64) -> Campaign {
+    pub fn get_campaign(env: Env, campaign_id: u64) -> Option<Campaign> {
         storage::get_campaign(&env, campaign_id)
     }
 
-    pub fn get_dispute(env: Env, campaign_id: u64) -> Dispute {
+    pub fn get_dispute(env: Env, campaign_id: u64) -> Option<Dispute> {
         storage::get_dispute(&env, campaign_id)
     }
 
@@ -600,7 +613,7 @@ impl ProductionEscrowContract {
         storage::get_tranches(&env, campaign_id)
     }
 
-    pub fn get_harvest_record(env: Env, campaign_id: u64) -> HarvestRecord {
+    pub fn get_harvest_record(env: Env, campaign_id: u64) -> Option<HarvestRecord> {
         storage::get_harvest_record(&env, campaign_id)
     }
 }

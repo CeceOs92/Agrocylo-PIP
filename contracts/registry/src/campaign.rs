@@ -78,7 +78,8 @@ pub fn update_campaign_status(
     caller: &Address,
     new_status: CampaignStatus,
 ) {
-    let mut record = storage::get_campaign_record(env, campaign_id);
+    let mut record = storage::get_campaign_record(env, campaign_id)
+        .unwrap_or_else(|| panic!("campaign record not found"));
 
     let is_admin = storage::get_admin(env) == *caller;
     let is_registered_escrow = record.escrow_contract == *caller;
@@ -95,7 +96,7 @@ pub fn update_campaign_status(
     events::campaign_status_updated(env, campaign_id, prev_status, new_status);
 }
 
-pub fn get_campaign_record(env: &Env, campaign_id: u64) -> CampaignRecord {
+pub fn get_campaign_record(env: &Env, campaign_id: u64) -> Option<CampaignRecord> {
     storage::get_campaign_record(env, campaign_id)
 }
 /// Maps the escrow contract's `CampaignStatus` onto the registry's own
@@ -138,10 +139,13 @@ fn map_escrow_status(status: &EscrowCampaignStatus) -> CampaignStatus {
 /// Returns `true` if drift was found and corrected, `false` if the mirror
 /// already matched.
 pub fn reconcile_campaign_status(env: &Env, campaign_id: u64) -> bool {
-    let mut record = storage::get_campaign_record(env, campaign_id);
+    let mut record = storage::get_campaign_record(env, campaign_id)
+        .unwrap_or_else(|| panic!("campaign record not found"));
 
     let escrow_client = ProductionEscrowContractClient::new(env, &record.escrow_contract);
-    let escrow_campaign = escrow_client.get_campaign(&campaign_id);
+    let escrow_campaign = escrow_client
+        .get_campaign(&campaign_id)
+        .unwrap_or_else(|| panic!("linked escrow campaign not found"));
     let true_status = map_escrow_status(&escrow_campaign.status);
 
     if record.status == true_status {
