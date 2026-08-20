@@ -113,6 +113,12 @@ impl RegistryContract {
     pub fn get_campaigns_by_farmer(env: Env, farmer: Address) -> Vec<u64> {
         campaign::get_campaigns_by_farmer(&env, &farmer)
     }
+    /// Permissionless: re-checks the linked escrow contract's real status
+    /// and self-heals the registry's mirrored status if it has drifted.
+    /// Returns true if drift was found and corrected.
+    pub fn reconcile_campaign_status(env: Env, campaign_id: u64) -> bool {
+        campaign::reconcile_campaign_status(&env, campaign_id)
+    }
 }
 
 #[cfg(test)]
