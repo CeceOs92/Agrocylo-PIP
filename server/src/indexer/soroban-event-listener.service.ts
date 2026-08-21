@@ -24,6 +24,13 @@ export class SorobanEventListenerService
   private pollingInterval: NodeJS.Timeout | null = null;
   private lastProcessedLedger = 0;
   private processedEventIds = new Set<string>();
+  /**
+   * Wall-clock timestamp (ms) of the last poll cycle that completed without
+   * throwing — used by IndexerHealthIndicator to detect a stalled indexer.
+   * Starts as null so the health check can distinguish "never polled yet"
+   * from "polled and failed".
+   */
+  private lastSuccessfulPollAt: number | null = null;
 
   constructor(
     private readonly configService: ConfigService,
@@ -110,6 +117,23 @@ export class SorobanEventListenerService
     );
   }
 
+  /**
+   * Returns a snapshot of the indexer's health state consumed by
+   * IndexerHealthIndicator. Intentionally read-only — the indicator must not
+   * mutate service internals.
+   */
+  getHealthStatus(): {
+    isRunning: boolean;
+    lastProcessedLedger: number;
+    lastSuccessfulPollAt: number | null;
+  } {
+    return {
+      isRunning: this.isRunning,
+      lastProcessedLedger: this.lastProcessedLedger,
+      lastSuccessfulPollAt: this.lastSuccessfulPollAt,
+    };
+  }
+
   async startListening(): Promise<void> {
     if (this.isRunning) return;
     this.isRunning = true;
@@ -160,6 +184,7 @@ export class SorobanEventListenerService
       }
       this.lastProcessedLedger = latestLedger.sequence;
       await this.persistCursor(contractIds, this.lastProcessedLedger);
+      this.lastSuccessfulPollAt = Date.now();
     } catch (error) {
       this.logger.error(
         { error: error instanceof Error ? error.message : String(error) },
