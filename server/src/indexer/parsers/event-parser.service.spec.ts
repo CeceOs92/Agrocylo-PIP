@@ -4,7 +4,11 @@ import type { RawSorobanEvent } from '../types/soroban-events.types';
 
 type MockPrisma = {
   transaction: { findUnique: jest.Mock; create: jest.Mock };
-  campaign: { upsert: jest.Mock; update: jest.Mock };
+  campaign: {
+    upsert: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
+  };
   user: { upsert: jest.Mock };
   investment: { create: jest.Mock };
   tranche: { create: jest.Mock };
@@ -20,6 +24,7 @@ function makeMockPrisma(): MockPrisma {
     campaign: {
       upsert: jest.fn().mockResolvedValue({}),
       update: jest.fn().mockResolvedValue({}),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     user: {
       upsert: jest.fn().mockResolvedValue({}),
@@ -245,6 +250,40 @@ describe('EventParserService', () => {
           }),
         }),
       );
+    });
+
+    it('advances a Funded campaign to InProduction on the first release', async () => {
+      await service.processEvent(
+        rawEvent(
+          'e5-first',
+          ['TrancheReleased', CAMPAIGN_ID],
+          [FARMER, 1700000000n, 400n],
+        ),
+      );
+
+      expect(prisma.campaign.updateMany).toHaveBeenCalledWith({
+        where: { id: '123', status: 'Funded' },
+        data: { status: 'InProduction' },
+      });
+    });
+
+    it('scopes the status advance to Funded so later releases are a no-op', async () => {
+      await service.processEvent(
+        rawEvent(
+          'e5-later',
+          ['TrancheReleased', CAMPAIGN_ID],
+          [FARMER, 1700000000n, 200n],
+        ),
+      );
+
+      // The transition is conditional on the current status: an
+      // InProduction campaign won't match the where clause, so a
+      // second/third release never resets or duplicate-writes the status.
+      expect(prisma.campaign.updateMany).toHaveBeenCalledWith({
+        where: { id: '123', status: 'Funded' },
+        data: { status: 'InProduction' },
+      });
+      expect(prisma.campaign.update).not.toHaveBeenCalled();
     });
 
     it('logs and skips a malformed payload', async () => {
