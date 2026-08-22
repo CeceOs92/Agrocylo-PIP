@@ -9,6 +9,9 @@ import {
   SUBSCRIBE_CAMPAIGN,
 } from '../src/websocket/events.types';
 
+const ALLOWED_ORIGIN = 'http://localhost:5173';
+const DISALLOWED_ORIGIN = 'https://evil.example';
+
 describe('CampaignEventsGateway (e2e)', () => {
   let app: INestApplication;
   let client: Socket;
@@ -40,8 +43,12 @@ describe('CampaignEventsGateway (e2e)', () => {
     client?.close();
   });
 
-  it('connects, joins a campaign room, and receives a broadcast event for a simulated persisted event', (done) => {
-    client = io(url, { transports: ['websocket'], forceNew: true });
+  it('connects from an allowed origin, joins a campaign room, and receives a broadcast event', (done) => {
+    client = io(url, {
+      transports: ['websocket'],
+      forceNew: true,
+      extraHeaders: { Origin: ALLOWED_ORIGIN },
+    });
 
     client.on('connect', () => {
       client.emit(SUBSCRIBE_CAMPAIGN, '123');
@@ -67,8 +74,33 @@ describe('CampaignEventsGateway (e2e)', () => {
     });
   }, 10000);
 
+  it('rejects a WebSocket handshake from a disallowed origin', async () => {
+    const unauthorizedClient = io(url, {
+      transports: ['websocket'],
+      forceNew: true,
+      reconnection: false,
+      timeout: 2000,
+      extraHeaders: { Origin: DISALLOWED_ORIGIN },
+    });
+
+    try {
+      const result = await new Promise<'connected' | 'rejected'>((resolve) => {
+        unauthorizedClient.once('connect', () => resolve('connected'));
+        unauthorizedClient.once('connect_error', () => resolve('rejected'));
+      });
+
+      expect(result).toBe('rejected');
+    } finally {
+      unauthorizedClient.close();
+    }
+  });
+
   it('does not deliver events for rooms the client never joined', (done) => {
-    client = io(url, { transports: ['websocket'], forceNew: true });
+    client = io(url, {
+      transports: ['websocket'],
+      forceNew: true,
+      extraHeaders: { Origin: ALLOWED_ORIGIN },
+    });
     const received: unknown[] = [];
 
     client.on('connect', () => {

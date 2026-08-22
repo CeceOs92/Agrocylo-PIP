@@ -1,13 +1,16 @@
 import { Logger, OnModuleInit } from '@nestjs/common';
 import {
   ConnectedSocket,
+  GatewayMetadata,
   MessageBody,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
 import { SkipThrottle } from '@nestjs/throttler';
+import type { IncomingMessage } from 'http';
 import type { Server, Socket } from 'socket.io';
+import configuration from '../config/configuration';
 import { RealtimeEventsService } from './realtime-events.service';
 import {
   ACTIVITY_ROOM,
@@ -19,6 +22,36 @@ import {
   campaignRoom,
   type CampaignEventPayload,
 } from './events.types';
+
+export function createWebSocketGatewayOptions(
+  allowedOrigins: string[],
+): GatewayMetadata {
+  const originAllowlist = new Set(allowedOrigins);
+
+  return {
+    cors: {
+      origin: allowedOrigins,
+      credentials: true,
+    },
+    // CORS headers protect HTTP polling in browsers, but WebSocket upgrades
+    // must be rejected explicitly because the WebSocket protocol does not
+    // enforce browser CORS rules.
+    allowRequest: (
+      request: IncomingMessage,
+      callback: (error: string | null | undefined, success: boolean) => void,
+    ): void => {
+      const origin = request.headers.origin;
+      const isAllowed =
+        typeof origin === 'string' && originAllowlist.has(origin);
+
+      callback(isAllowed ? null : 'Origin not allowed', isAllowed);
+    },
+  };
+}
+
+export const webSocketGatewayOptions = createWebSocketGatewayOptions(
+  configuration().app.corsAllowedOrigins,
+);
 
 /**
  * Push channel for campaign updates. Clients opt into rooms explicitly
@@ -37,7 +70,7 @@ import {
  *   details or private user notifications), token-based authentication guards must be added
  *   at connection time (e.g., handshake tokens) or message handle level.
  */
-@WebSocketGateway()
+@WebSocketGateway(webSocketGatewayOptions)
 @SkipThrottle()
 export class CampaignEventsGateway implements OnModuleInit {
   @WebSocketServer()

@@ -377,7 +377,6 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     );
     assert_eq!(
         h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
-        h.registry.get_campaign_record(&h.campaign_id).status,
         RegistryCampaignStatus::Active
     );
 
@@ -394,7 +393,6 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     // registry still says Active, with no on-chain signal of it.
     assert_eq!(
         h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
-        h.registry.get_campaign_record(&h.campaign_id).status,
         RegistryCampaignStatus::Active
     );
 
@@ -403,7 +401,6 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     assert!(corrected);
     assert_eq!(
         h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
-        h.registry.get_campaign_record(&h.campaign_id).status,
         RegistryCampaignStatus::Failed
     );
     assert!(registry_emitted(&h, "CampaignStatusReconciled"));

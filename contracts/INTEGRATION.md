@@ -33,7 +33,7 @@ In the intended integration, `ProductionEscrowContract` (or an authorized backen
 | Admin management | `initialize`, `update_admin`, `get_admin` |
 | Approved-contract allowlist | `approve_contract`, `revoke_contract`, `is_contract_approved` |
 | Recording campaign audit activities | `record_activity` |
-| Retrieving campaign activity history | `get_campaign_activities` |
+| Retrieving campaign activity history | `get_campaign_activities` (all pages), `get_campaign_activities_page` / `get_campaign_activity_page_count` (bounded paged reads) |
 | Event emission for registry changes | Soroban events (see table below) |
 
 ## State Ownership
@@ -42,7 +42,7 @@ In the intended integration, `ProductionEscrowContract` (or an authorized backen
 |-------|-------|--------------|-------------|
 | Admin address | RegistryContract | Instance | `DataKey::Admin` |
 | Approved contract list | RegistryContract | Instance | `DataKey::ApprovedContract(Address)` |
-| Campaign activity history | RegistryContract | Persistent | `DataKey::CampaignActivities(u64)` |
+| Campaign activity history | RegistryContract | Persistent | `DataKey::CampaignActivitiesPage(u64, u32)` + `DataKey::CampaignActivitiesPageCount(u64)` (100 records/page) |
 | Campaign metadata (farmer, target, token, deadline, harvest) | ProductionEscrowContract | Persistent | `DataKey::Campaign(u64)` |
 | Campaign financials (`total_funded`, `released`, `refundable`) | ProductionEscrowContract | Persistent | Inside `Campaign` struct |
 | Campaign status | ProductionEscrowContract | Persistent | `Campaign.status` (`CampaignStatus`) |

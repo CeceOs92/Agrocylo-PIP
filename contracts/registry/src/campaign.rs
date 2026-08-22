@@ -164,3 +164,11 @@ pub fn reconcile_campaign_status(env: &Env, campaign_id: u64) -> bool {
 pub fn get_campaigns_by_farmer(env: &Env, farmer: &Address) -> Vec<u64> {
     storage::get_farmer_campaigns(env, farmer)
 }
+
+pub fn get_campaigns_by_farmer_page_count(env: &Env, farmer: &Address) -> u32 {
+    storage::get_farmer_campaigns_page_count(env, farmer)
+}
+
+pub fn get_campaigns_by_farmer_page(env: &Env, farmer: &Address, page: u32) -> Vec<u64> {
+    storage::get_farmer_campaigns_page(env, farmer, page)
+}
