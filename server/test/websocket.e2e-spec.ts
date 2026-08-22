@@ -16,8 +16,13 @@ describe('CampaignEventsGateway (e2e)', () => {
   let app: INestApplication;
   let client: Socket;
   let url: string;
+  const ALLOWED_ORIGIN = 'http://localhost:5173';
+  const DISALLOWED_ORIGIN = 'http://evil.example.com';
+  const previousCors = process.env.CORS_ALLOWED_ORIGINS;
 
   beforeAll(async () => {
+    process.env.CORS_ALLOWED_ORIGINS = ALLOWED_ORIGIN;
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -31,6 +36,7 @@ describe('CampaignEventsGateway (e2e)', () => {
 
   afterAll(async () => {
     await app.close();
+    process.env.CORS_ALLOWED_ORIGINS = previousCors;
   });
 
   afterEach(() => {
@@ -113,5 +119,39 @@ describe('CampaignEventsGateway (e2e)', () => {
     });
 
     client.on(CAMPAIGN_EVENT, (payload) => received.push(payload));
+  }, 10000);
+
+  it('accepts a connection from an allowed origin', (done) => {
+    client = io(url, {
+      transports: ['websocket'],
+      forceNew: true,
+      extraHeaders: { Origin: ALLOWED_ORIGIN },
+    });
+
+    client.on('connect', () => {
+      expect(client.connected).toBe(true);
+      done();
+    });
+
+    client.on('connect_error', (err) => {
+      done(err);
+    });
+  }, 10000);
+
+  it('rejects a connection from a disallowed origin', (done) => {
+    client = io(url, {
+      transports: ['websocket'],
+      forceNew: true,
+      extraHeaders: { Origin: DISALLOWED_ORIGIN },
+    });
+
+    client.on('connect', () => {
+      done(new Error('Connection from disallowed origin should have failed'));
+    });
+
+    client.on('connect_error', (err) => {
+      expect(err).toBeDefined();
+      done();
+    });
   }, 10000);
 });
