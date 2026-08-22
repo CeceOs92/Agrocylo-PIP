@@ -85,7 +85,7 @@ export function formatActivityLine(
     case 'FundsReleased':
       return `Funds released${camp} to ${short}`;
     case 'HarvestReported':
-      return `Harvest reported${camp} by ${short}`;
+      return `${short} reported harvest${camp}`;
     case 'DisputeInitiated':
       return `${short} opened a dispute${camp}`;
     case 'DisputeResolved':

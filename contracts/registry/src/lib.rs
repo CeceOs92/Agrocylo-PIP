@@ -106,7 +106,7 @@ impl RegistryContract {
         campaign::update_campaign_status(&env, campaign_id, &caller, new_status);
     }
 
-    pub fn get_campaign_record(env: Env, campaign_id: u64) -> CampaignRecord {
+    pub fn get_campaign_record(env: Env, campaign_id: u64) -> Option<CampaignRecord> {
         campaign::get_campaign_record(&env, campaign_id)
     }
 

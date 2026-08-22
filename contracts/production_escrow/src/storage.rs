@@ -47,10 +47,12 @@ pub fn has_campaign(env: &Env, campaign_id: u64) -> bool {
         .has(&DataKey::Campaign(campaign_id))
 }
 
-pub fn get_campaign(env: &Env, campaign_id: u64) -> Campaign {
+pub fn get_campaign(env: &Env, campaign_id: u64) -> Option<Campaign> {
     let key = DataKey::Campaign(campaign_id);
-    let campaign = env.storage().persistent().get(&key).unwrap();
-    extend_persistent_ttl(env, &key);
+    let campaign = env.storage().persistent().get(&key);
+    if campaign.is_some() {
+        extend_persistent_ttl(env, &key);
+    }
     campaign
 }
 
@@ -60,10 +62,12 @@ pub fn set_campaign(env: &Env, campaign_id: u64, campaign: &Campaign) {
     extend_persistent_ttl(env, &key);
 }
 
-pub fn get_dispute(env: &Env, campaign_id: u64) -> Dispute {
+pub fn get_dispute(env: &Env, campaign_id: u64) -> Option<Dispute> {
     let key = DataKey::Dispute(campaign_id);
-    let dispute = env.storage().persistent().get(&key).unwrap();
-    extend_persistent_ttl(env, &key);
+    let dispute = env.storage().persistent().get(&key);
+    if dispute.is_some() {
+        extend_persistent_ttl(env, &key);
+    }
     dispute
 }
 
@@ -102,10 +106,12 @@ pub fn set_tranches(env: &Env, campaign_id: u64, tranches: &TrancheList) {
     extend_persistent_ttl(env, &key);
 }
 
-pub fn get_harvest_record(env: &Env, campaign_id: u64) -> HarvestRecord {
+pub fn get_harvest_record(env: &Env, campaign_id: u64) -> Option<HarvestRecord> {
     let key = DataKey::HarvestRecord(campaign_id);
-    let record = env.storage().persistent().get(&key).unwrap();
-    extend_persistent_ttl(env, &key);
+    let record = env.storage().persistent().get(&key);
+    if record.is_some() {
+        extend_persistent_ttl(env, &key);
+    }
     record
 }
 

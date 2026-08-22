@@ -153,7 +153,7 @@ fn test_fund_campaign_single_investor_reaches_target() {
 
     client.fund_campaign(&campaign_id, &investor, &1000i128);
 
-    let campaign = client.get_campaign(&campaign_id);
+    let campaign = client.get_campaign(&campaign_id).unwrap();
     assert_eq!(campaign.total_funded, 1000);
     assert_eq!(campaign.status, CampaignStatus::Funded);
 
@@ -173,7 +173,7 @@ fn test_fund_campaign_multi_investor_tracks_contributions() {
     assert_eq!(s.client.get_contribution(&s.campaign_id, &s.investor1), 600);
     assert_eq!(s.client.get_contribution(&s.campaign_id, &s.investor2), 400);
 
-    let campaign = s.client.get_campaign(&s.campaign_id);
+    let campaign = s.client.get_campaign(&s.campaign_id).unwrap();
     assert_eq!(campaign.total_funded, 1000);
     assert_eq!(campaign.status, CampaignStatus::Funded);
 }
@@ -206,7 +206,7 @@ fn test_fund_campaign_status_is_funding_before_target() {
 
     client.fund_campaign(&campaign_id, &investor, &500i128);
 
-    let campaign = client.get_campaign(&campaign_id);
+    let campaign = client.get_campaign(&campaign_id).unwrap();
     assert_eq!(campaign.status, CampaignStatus::Funding);
     assert_eq!(campaign.total_funded, 500);
 }
@@ -453,7 +453,7 @@ fn test_receive_contribution_legitimate_reconciliation_succeeds() {
 
     client.receive_contribution(&1u64, &investor, &500i128);
 
-    let campaign = client.get_campaign(&1u64);
+    let campaign = client.get_campaign(&1u64).unwrap();
     assert_eq!(campaign.total_funded, 500);
     assert_eq!(campaign.status, CampaignStatus::Funding);
     assert_eq!(client.get_contribution(&1u64, &investor), 500);
@@ -637,7 +637,7 @@ fn test_release_tranche_updates_accounting() {
     s.client
         .release_tranche(&s.campaign_id, &s.farmer, &300i128);
 
-    let campaign = s.client.get_campaign(&s.campaign_id);
+    let campaign = s.client.get_campaign(&s.campaign_id).unwrap();
     assert_eq!(campaign.released, 300);
     // escrow_held = 1000 - 300 - 0 = 700
     assert_eq!(
@@ -805,14 +805,14 @@ fn test_open_dispute_records_fields_and_status() {
     let reason = Symbol::new(&s.env, "Delay");
     s.client.open_dispute(&s.campaign_id, &s.investor1, &reason);
 
-    let dispute = s.client.get_dispute(&s.campaign_id);
+    let dispute = s.client.get_dispute(&s.campaign_id).unwrap();
     assert_eq!(dispute.campaign_id, s.campaign_id);
     assert_eq!(dispute.opener, s.investor1);
     assert_eq!(dispute.reason, reason);
     assert_eq!(dispute.status, DisputeStatus::Open);
     assert_eq!(dispute.resolution, DisputeResolution::Pending);
 
-    let campaign = s.client.get_campaign(&s.campaign_id);
+    let campaign = s.client.get_campaign(&s.campaign_id).unwrap();
     assert_eq!(campaign.status, CampaignStatus::Disputed);
 
     let events = s.env.events().all();
@@ -829,7 +829,7 @@ fn test_farmer_can_open_dispute() {
     s.client
         .open_dispute(&s.campaign_id, &s.farmer, &Symbol::new(&s.env, "Quality"));
     assert_eq!(
-        s.client.get_campaign(&s.campaign_id).status,
+        s.client.get_campaign(&s.campaign_id).unwrap().status,
         CampaignStatus::Disputed
     );
 }
@@ -851,7 +851,7 @@ fn test_resolve_full_refund() {
     s.client
         .resolve_dispute(&s.campaign_id, &DisputeResolution::FullRefund, &0i128);
 
-    let campaign = s.client.get_campaign(&s.campaign_id);
+    let campaign = s.client.get_campaign(&s.campaign_id).unwrap();
     assert_eq!(campaign.released, 0);
     assert_eq!(campaign.refundable, 1000);
     assert_eq!(campaign.status, CampaignStatus::Resolved);
@@ -868,7 +868,7 @@ fn test_resolve_partial_settlement() {
         &300i128,
     );
 
-    let campaign = s.client.get_campaign(&s.campaign_id);
+    let campaign = s.client.get_campaign(&s.campaign_id).unwrap();
     assert_eq!(campaign.released, 300);
     assert_eq!(campaign.refundable, 700);
     assert_eq!(campaign.status, CampaignStatus::Resolved);
@@ -882,7 +882,7 @@ fn test_resolve_full_payout() {
     s.client
         .resolve_dispute(&s.campaign_id, &DisputeResolution::FullPayout, &0i128);
 
-    let campaign = s.client.get_campaign(&s.campaign_id);
+    let campaign = s.client.get_campaign(&s.campaign_id).unwrap();
     assert_eq!(campaign.released, 1000);
     assert_eq!(campaign.refundable, 0);
     assert_eq!(campaign.status, CampaignStatus::Resolved);
@@ -985,7 +985,7 @@ fn test_happy_path_settlement() {
     s.client
         .settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
 
-    let campaign = s.client.get_campaign(&s.campaign_id);
+    let campaign = s.client.get_campaign(&s.campaign_id).unwrap();
     assert_eq!(campaign.released, 1000);
     assert_eq!(campaign.returnable, 0);
     assert_eq!(campaign.status, CampaignStatus::Settled);
@@ -1013,7 +1013,7 @@ fn test_create_campaign_successful() {
         &Symbol::new(&env, "wheat"),
     );
 
-    let campaign = client.get_campaign(&campaign_id);
+    let campaign = client.get_campaign(&campaign_id).unwrap();
     assert_eq!(campaign.farmer, farmer);
     assert_eq!(campaign.total_funded, 0);
     assert_eq!(campaign.status, CampaignStatus::Active);
@@ -1129,7 +1129,7 @@ fn test_report_harvest_sets_harvested_status() {
     s.client
         .report_harvest(&s.campaign_id, &s.farmer, &Symbol::new(&s.env, "good"));
 
-    let campaign = s.client.get_campaign(&s.campaign_id);
+    let campaign = s.client.get_campaign(&s.campaign_id).unwrap();
     assert_eq!(campaign.status, CampaignStatus::Harvested);
 }
 
@@ -1139,7 +1139,7 @@ fn test_report_harvest_stores_record() {
     let outcome = Symbol::new(&s.env, "bumper");
     s.client.report_harvest(&s.campaign_id, &s.farmer, &outcome);
 
-    let record = s.client.get_harvest_record(&s.campaign_id);
+    let record = s.client.get_harvest_record(&s.campaign_id).unwrap();
     assert_eq!(record.farmer, s.farmer);
     assert_eq!(record.outcome, outcome);
     // Timestamp and sequence are 0 in the default test environment; just verify
@@ -1223,7 +1223,7 @@ fn test_settle_campaign_distributes_returns_to_investors() {
     s.client
         .settle_campaign(&s.campaign_id, &s.farmer, &400i128);
 
-    let campaign = s.client.get_campaign(&s.campaign_id);
+    let campaign = s.client.get_campaign(&s.campaign_id).unwrap();
     assert_eq!(campaign.released, 400);
     assert_eq!(campaign.returnable, 600);
     assert_eq!(campaign.status, CampaignStatus::Settled);
@@ -1250,7 +1250,7 @@ fn test_settle_campaign_full_payout_to_farmer() {
     s.client
         .settle_campaign(&s.campaign_id, &s.farmer, &1000i128);
 
-    let campaign = s.client.get_campaign(&s.campaign_id);
+    let campaign = s.client.get_campaign(&s.campaign_id).unwrap();
     assert_eq!(campaign.released, 1000);
     assert_eq!(campaign.returnable, 0);
     assert_eq!(campaign.status, CampaignStatus::Settled);
@@ -1326,7 +1326,7 @@ fn test_mark_failed_sets_refundable_and_status() {
     // Campaign is in Funding state (500 of 1000 raised).
     client.mark_failed(&campaign_id);
 
-    let campaign = client.get_campaign(&campaign_id);
+    let campaign = client.get_campaign(&campaign_id).unwrap();
     assert_eq!(campaign.status, CampaignStatus::Failed);
     assert_eq!(campaign.refundable, 500);
 }
@@ -1668,12 +1668,8 @@ fn test_claim_return_truncation_dust_remains_in_contract() {
 #[test]
 fn test_open_dispute_in_production() {
     let s = funded_campaign();
-    s.client
-        .release_tranche(&s.campaign_id, &s.farmer, &300i128);
-    assert_eq!(
-        s.client.get_campaign(&s.campaign_id).status,
-        CampaignStatus::InProduction
-    );
+    s.client.release_tranche(&s.campaign_id, &s.farmer, &300i128);
+    assert_eq!(s.client.get_campaign(&s.campaign_id).unwrap().status, CampaignStatus::InProduction);
 
     s.client
         .open_dispute(&s.campaign_id, &s.investor1, &Symbol::new(&s.env, "Delay"));
@@ -1681,23 +1677,47 @@ fn test_open_dispute_in_production() {
         s.client.get_campaign(&s.campaign_id).status,
         CampaignStatus::Disputed
     );
+    assert_eq!(s.client.get_campaign(&s.campaign_id).unwrap().status, CampaignStatus::Disputed);
 }
 
 #[test]
 fn test_mark_failed_in_production() {
     let s = token_funded_campaign();
-    s.client
-        .release_tranche(&s.campaign_id, &s.farmer, &300i128);
-    assert_eq!(
-        s.client.get_campaign(&s.campaign_id).status,
-        CampaignStatus::InProduction
-    );
+    s.client.release_tranche(&s.campaign_id, &s.farmer, &300i128);
+    assert_eq!(s.client.get_campaign(&s.campaign_id).unwrap().status, CampaignStatus::InProduction);
 
     s.client.mark_failed(&s.campaign_id);
-    assert_eq!(
-        s.client.get_campaign(&s.campaign_id).status,
-        CampaignStatus::Failed
-    );
+    assert_eq!(s.client.get_campaign(&s.campaign_id).unwrap().status, CampaignStatus::Failed);
+}
+
+// ─── not-found getter tests ──────────────────────────────────────────────────
+
+#[test]
+fn test_get_campaign_returns_none_for_missing_campaign() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register_contract(None, ProductionEscrowContract);
+    let client = ProductionEscrowContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin);
+
+    assert_eq!(client.get_campaign(&999u64), None);
+}
+
+#[test]
+fn test_get_dispute_returns_none_for_missing_dispute() {
+    let s = token_funded_campaign();
+    // Campaign exists, but no dispute has been opened for it.
+    assert_eq!(s.client.get_dispute(&s.campaign_id), None);
+}
+
+#[test]
+fn test_get_harvest_record_returns_none_for_missing_record() {
+    let s = token_funded_campaign();
+    // Campaign exists, but harvest has not been reported yet.
+    assert_eq!(s.client.get_harvest_record(&s.campaign_id), None);
 }
 
 #[test]

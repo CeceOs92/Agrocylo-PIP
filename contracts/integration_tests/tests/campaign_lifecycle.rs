@@ -109,7 +109,7 @@ impl<'a> Harness<'a> {
     }
 
     fn campaign(&self) -> Campaign {
-        self.escrow.get_campaign(&self.campaign_id)
+        self.escrow.get_campaign(&self.campaign_id).unwrap()
     }
 
     fn token_client(&self) -> TokenClient<'a> {
@@ -311,7 +311,7 @@ fn disputed_campaign_partial_settlement_flow() {
     assert_eq!(campaign.released, 400);
     assert_eq!(campaign.refundable, 600);
 
-    let dispute = h.escrow.get_dispute(&h.campaign_id);
+    let dispute = h.escrow.get_dispute(&h.campaign_id).unwrap();
     assert_eq!(dispute.resolution, DisputeResolution::PartialSettlement);
 
     // Investors claim their pro-rata share of the 600 refundable pool.
@@ -369,6 +369,7 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     h.registry
         .link_campaign_escrow(&h.campaign_id, &h.farmer, &h.escrow.address, &crop, &region);
     assert_eq!(
+        h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
         h.registry.get_campaign_record(&h.campaign_id).status,
         RegistryCampaignStatus::Active
     );
@@ -385,6 +386,7 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     // The registry mirror has silently drifted: escrow says Failed,
     // registry still says Active, with no on-chain signal of it.
     assert_eq!(
+        h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
         h.registry.get_campaign_record(&h.campaign_id).status,
         RegistryCampaignStatus::Active
     );
@@ -393,6 +395,7 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     let corrected = h.registry.reconcile_campaign_status(&h.campaign_id);
     assert!(corrected);
     assert_eq!(
+        h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
         h.registry.get_campaign_record(&h.campaign_id).status,
         RegistryCampaignStatus::Failed
     );

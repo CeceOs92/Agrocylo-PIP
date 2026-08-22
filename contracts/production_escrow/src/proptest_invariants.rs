@@ -86,7 +86,7 @@ proptest! {
         // Mark failed — all held funds (= total_funded here) become refundable.
         client.mark_failed(&1u64);
 
-        let campaign   = client.get_campaign(&1u64);
+        let campaign   = client.get_campaign(&1u64).unwrap();
         let refundable = campaign.refundable;
 
         // Simulate what claim_refund computes, then call it.
@@ -177,7 +177,7 @@ proptest! {
 
         client.settle_campaign(&1u64, &farmer, &farmer_payout);
 
-        let campaign   = client.get_campaign(&1u64);
+        let campaign   = client.get_campaign(&1u64).unwrap();
         let returnable = campaign.returnable;
 
         prop_assert_eq!(
@@ -269,7 +269,7 @@ proptest! {
 
         client.resolve_dispute(&1u64, &DisputeResolution::PartialSettlement, &payout_amount);
 
-        let campaign = client.get_campaign(&1u64);
+        let campaign = client.get_campaign(&1u64).unwrap();
 
         // Exact conservation: payout booked as released, remainder as refundable.
         prop_assert_eq!(

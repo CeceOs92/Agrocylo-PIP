@@ -84,14 +84,12 @@ pub fn has_campaign_record(env: &Env, campaign_id: u64) -> bool {
     env.storage().persistent().has(&key)
 }
 
-pub fn get_campaign_record(env: &Env, campaign_id: u64) -> CampaignRecord {
+pub fn get_campaign_record(env: &Env, campaign_id: u64) -> Option<CampaignRecord> {
     let key = DataKey::CampaignRecord(campaign_id);
-    let record = env
-        .storage()
-        .persistent()
-        .get(&key)
-        .expect("campaign not found");
-    extend_persistent_ttl(env, &key);
+    let record = env.storage().persistent().get(&key);
+    if record.is_some() {
+        extend_persistent_ttl(env, &key);
+    }
     record
 }
 

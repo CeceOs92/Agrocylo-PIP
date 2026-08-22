@@ -60,8 +60,6 @@ describe('registry', () => {
     vi.mocked(contractClient.contractMethod).mockReturnValue(mockCall as never);
   });
 
-  // ── Reads ───────────────────────────────────────────────────
-
   describe('getFarmer', () => {
     it('returns a FarmerProfile on success', async () => {
       mockCall.mockResolvedValue({ result: FARMER });
@@ -99,8 +97,6 @@ describe('registry', () => {
       await expect(getCampaignActivities(99n)).rejects.toThrow('no activities');
     });
   });
-
-  // ── Writes ──────────────────────────────────────────────────
 
   describe('registerFarmer', () => {
     it('calls invokeContractWrite with the correct args', async () => {
