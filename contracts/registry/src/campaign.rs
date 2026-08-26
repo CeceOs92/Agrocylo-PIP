@@ -1,6 +1,7 @@
-use crate::{events, storage};
+use crate::escrow::ProductionEscrowContractClient;
 use crate::types::{CampaignInfo, CampaignRecord, CampaignStatus};
-use production_escrow::{CampaignStatus as EscrowCampaignStatus, ProductionEscrowContractClient};
+use crate::{events, storage};
+use escrow_types::CampaignStatus as EscrowCampaignStatus;
 use soroban_sdk::{Address, Env, String, Symbol, Vec};
 
 pub fn register_campaign(

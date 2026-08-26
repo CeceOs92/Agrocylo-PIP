@@ -118,16 +118,28 @@ export class SorobanEventListenerService
   }
 
   /**
+   * Whether indexing is configured at all. With no contract IDs set (local
+   * clones, CI, environments where the contracts are not deployed yet)
+   * `onModuleInit` deliberately skips startup, so "not running" is the
+   * expected state rather than a fault.
+   */
+  isEnabled(): boolean {
+    return this.getContractIds().length > 0;
+  }
+
+  /**
    * Returns a snapshot of the indexer's health state consumed by
    * IndexerHealthIndicator. Intentionally read-only — the indicator must not
    * mutate service internals.
    */
   getHealthStatus(): {
+    isEnabled: boolean;
     isRunning: boolean;
     lastProcessedLedger: number;
     lastSuccessfulPollAt: number | null;
   } {
     return {
+      isEnabled: this.isEnabled(),
       isRunning: this.isRunning,
       lastProcessedLedger: this.lastProcessedLedger,
       lastSuccessfulPollAt: this.lastSuccessfulPollAt,

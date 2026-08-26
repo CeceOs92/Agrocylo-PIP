@@ -1,4 +1,4 @@
-use crate::types::{Campaign, DataKey, Dispute, HarvestRecord, TrancheList};
+use crate::{Campaign, DataKey, Dispute, HarvestRecord, TrancheList};
 use soroban_sdk::{Address, Env, Vec};
 
 const DAY_IN_LEDGERS: u32 = 17280;
@@ -14,9 +14,11 @@ pub fn extend_instance_ttl(env: &Env) {
 }
 
 fn extend_persistent_ttl(env: &Env, key: &DataKey) {
-    env.storage()
-        .persistent()
-        .extend_ttl(key, PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+    env.storage().persistent().extend_ttl(
+        key,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn has_admin(env: &Env) -> bool {

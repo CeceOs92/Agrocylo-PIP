@@ -127,7 +127,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
           role="status"
           aria-label="Loading activity"
         >
-          <Spinner size="md" variant="primary" />
+          <Spinner size="md" variant="primary" label={null} />
         </div>
       )}
 

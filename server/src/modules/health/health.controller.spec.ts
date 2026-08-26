@@ -74,7 +74,10 @@ describe('HealthController', () => {
 
   it('returns status "error" and marks database down when the DB query throws', async () => {
     const dbError = new Error('Connection refused');
-    const controller = await buildModule(makePrisma(dbError), makeIndexerIndicator());
+    const controller = await buildModule(
+      makePrisma(dbError),
+      makeIndexerIndicator(),
+    );
 
     // When any indicator fails, Terminus throws ServiceUnavailableException.
     // The detailed result is carried in getResponse().
@@ -84,7 +87,10 @@ describe('HealthController', () => {
       fail('Expected ServiceUnavailableException');
     } catch (err) {
       expect(err).toBeInstanceOf(ServiceUnavailableException);
-      response = (err as ServiceUnavailableException).getResponse() as Record<string, any>;
+      response = (err as ServiceUnavailableException).getResponse() as Record<
+        string,
+        any
+      >;
     }
 
     expect(response!.status).toBe('error');
@@ -98,7 +104,10 @@ describe('HealthController', () => {
   // -------------------------------------------------------------------------
 
   it('marks database up when the SELECT 1 query succeeds', async () => {
-    const controller = await buildModule(makePrisma('ok'), makeIndexerIndicator());
+    const controller = await buildModule(
+      makePrisma('ok'),
+      makeIndexerIndicator(),
+    );
     const result = await controller.check();
 
     expect(result.details.database.status).toBe('up');
@@ -111,18 +120,16 @@ describe('HealthController', () => {
   it('returns status "error" when the indexer indicator throws HealthCheckError', async () => {
     const stalledIndicator = makeIndexerIndicator({
       check: jest.fn().mockImplementation(() => {
-        throw new HealthCheckError(
-          'Indexer has stalled',
-          {
-            soroban_indexer: {
-              status: 'down',
-              message: 'Indexer has stalled — no successful poll within threshold',
-              msSinceLastPoll: 20000,
-              stalenessThresholdMs: 15000,
-              lastProcessedLedger: 999,
-            },
+        throw new HealthCheckError('Indexer has stalled', {
+          soroban_indexer: {
+            status: 'down',
+            message:
+              'Indexer has stalled — no successful poll within threshold',
+            msSinceLastPoll: 20000,
+            stalenessThresholdMs: 15000,
+            lastProcessedLedger: 999,
           },
-        );
+        });
       }),
     });
 
@@ -135,7 +142,10 @@ describe('HealthController', () => {
       fail('Expected ServiceUnavailableException');
     } catch (err) {
       expect(err).toBeInstanceOf(ServiceUnavailableException);
-      response = (err as ServiceUnavailableException).getResponse() as Record<string, any>;
+      response = (err as ServiceUnavailableException).getResponse() as Record<
+        string,
+        any
+      >;
     }
 
     expect(response!.status).toBe('error');

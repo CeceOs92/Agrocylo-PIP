@@ -9,9 +9,6 @@ import {
   SUBSCRIBE_CAMPAIGN,
 } from '../src/websocket/events.types';
 
-const ALLOWED_ORIGIN = 'http://localhost:5173';
-const DISALLOWED_ORIGIN = 'https://evil.example';
-
 describe('CampaignEventsGateway (e2e)', () => {
   let app: INestApplication;
   let client: Socket;

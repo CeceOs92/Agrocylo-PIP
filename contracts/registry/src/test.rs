@@ -135,7 +135,9 @@ fn test_revoke_contract() {
 
 #[test]
 fn test_approve_contract_requires_admin_auth() {
-    let (env, admin, _, contract_addr, client) = create_test_env();
+    // This test generates its own admin/contract addresses below, so the ones
+    // returned by the harness are deliberately discarded.
+    let (env, _, _, _, client) = create_test_env();
 
     let admin = Address::generate(&env);
     let contract_addr = Address::generate(&env);
@@ -494,7 +496,7 @@ fn test_register_farmer_requires_authorization() {
 
 #[test]
 fn test_get_farmer_nonexistent() {
-    let (env, admin, user, _, client) = create_test_env();
+    let (_, admin, user, _, client) = create_test_env();
     client.initialize(&admin);
 
     let farmer_profile = client.get_farmer(&user);
@@ -597,7 +599,7 @@ fn test_register_campaign_requires_authorization() {
 
 #[test]
 fn test_get_campaign_nonexistent() {
-    let (env, admin, _, _, client) = create_test_env();
+    let (_, admin, _, _, client) = create_test_env();
     client.initialize(&admin);
 
     let campaign = client.get_campaign(&999u64);

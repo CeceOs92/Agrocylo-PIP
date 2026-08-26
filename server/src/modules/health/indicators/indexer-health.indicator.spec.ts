@@ -20,12 +20,14 @@ function makeConfig(pollIntervalMs = POLL_INTERVAL_MS) {
 
 function makeIndexer(
   status: {
+    isEnabled?: boolean;
     isRunning?: boolean;
     lastProcessedLedger?: number;
     lastSuccessfulPollAt?: number | null;
   } = {},
 ) {
   const defaults = {
+    isEnabled: true,
     isRunning: true,
     lastProcessedLedger: 1000,
     lastSuccessfulPollAt: Date.now(),
@@ -70,6 +72,21 @@ describe('IndexerHealthIndicator', () => {
     const result = await indicator.check('soroban_indexer');
 
     expect(result.soroban_indexer.status).toBe('up');
+  });
+
+  // -------------------------------------------------------------------------
+  // Healthy — indexing deliberately switched off (no contract IDs configured)
+  // -------------------------------------------------------------------------
+
+  it('returns status up when the indexer is disabled by configuration', async () => {
+    const indicator = buildIndicator(
+      makeIndexer({ isEnabled: false, isRunning: false }),
+    );
+
+    const result = await indicator.check('soroban_indexer');
+
+    expect(result.soroban_indexer.status).toBe('up');
+    expect(result.soroban_indexer.enabled).toBe(false);
   });
 
   // -------------------------------------------------------------------------

@@ -3,6 +3,7 @@
 mod activity;
 mod admin;
 mod campaign;
+mod escrow;
 mod events;
 mod farmer;
 mod storage;

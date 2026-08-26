@@ -23,8 +23,7 @@ function parseCampaignIds(raw: string): bigint[] {
 }
 
 const envIds: bigint[] = parseCampaignIds(
-  (import.meta as Record<string, unknown> & { env?: Record<string, string> })
-    .env?.VITE_KNOWN_CAMPAIGN_IDS ?? '',
+  import.meta.env.VITE_KNOWN_CAMPAIGN_IDS ?? '',
 );
 
 export function ActivityFeedPage() {

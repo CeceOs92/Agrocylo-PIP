@@ -2,15 +2,15 @@
 
 pub mod events;
 mod storage;
-mod types;
 
-pub use types::*;
+// The contract's data types live in the `escrow_types` crate so that other
+// contracts can decode them without linking this one. Re-exported here so
+// `production_escrow::Campaign` and friends keep working for dependents.
+pub use escrow_types::*;
 
 use events::*;
 use soroban_sdk::{
-    contract, contractimpl,
-    token::Client as TokenClient,
-    Address, Env, Symbol, Vec,
+    contract, contractimpl, token::Client as TokenClient, Address, Env, Symbol, Vec,
 };
 
 #[contract]
@@ -87,7 +87,9 @@ impl ProductionEscrowContract {
         // With target_amount ≤ i64::MAX, the worst-case product is (i64::MAX)² ≈ 2¹²⁶,
         // which fits safely in u128 used by the safe_pro_rata helper.
         if target_amount > i64::MAX as i128 {
-            panic!("target_amount exceeds safe range for pro-rata arithmetic (must be <= i64::MAX)");
+            panic!(
+                "target_amount exceeds safe range for pro-rata arithmetic (must be <= i64::MAX)"
+            );
         }
 
         farmer.require_auth();
@@ -122,9 +124,7 @@ impl ProductionEscrowContract {
 
         let mut campaign = storage::get_campaign(&env, campaign_id)
             .unwrap_or_else(|| panic!("campaign not found"));
-        if campaign.status != CampaignStatus::Active
-            && campaign.status != CampaignStatus::Funding
-        {
+        if campaign.status != CampaignStatus::Active && campaign.status != CampaignStatus::Funding {
             panic!("campaign not accepting contributions");
         }
 
@@ -150,8 +150,7 @@ impl ProductionEscrowContract {
         assert_solvent(&env, &campaign);
         storage::set_campaign(&env, campaign_id, &campaign);
 
-        let contributed =
-            storage::get_contribution(&env, campaign_id, &investor) + amount;
+        let contributed = storage::get_contribution(&env, campaign_id, &investor) + amount;
         storage::set_contribution(&env, campaign_id, &investor, contributed);
         storage::extend_instance_ttl(&env);
 
@@ -188,9 +187,7 @@ impl ProductionEscrowContract {
         // lone compromised/malicious admin key cannot fabricate contributions.
         campaign.farmer.require_auth();
 
-        if campaign.status != CampaignStatus::Active
-            && campaign.status != CampaignStatus::Funding
-        {
+        if campaign.status != CampaignStatus::Active && campaign.status != CampaignStatus::Funding {
             panic!("campaign not accepting contributions");
         }
 
@@ -208,8 +205,7 @@ impl ProductionEscrowContract {
         assert_solvent(&env, &campaign);
         storage::set_campaign(&env, campaign_id, &campaign);
 
-        let contributed =
-            storage::get_contribution(&env, campaign_id, &investor) + amount;
+        let contributed = storage::get_contribution(&env, campaign_id, &investor) + amount;
         storage::set_contribution(&env, campaign_id, &investor, contributed);
         storage::extend_instance_ttl(&env);
 
@@ -221,9 +217,7 @@ impl ProductionEscrowContract {
 
         let mut campaign = storage::get_campaign(&env, campaign_id)
             .unwrap_or_else(|| panic!("campaign not found"));
-        if campaign.status != CampaignStatus::Active
-            && campaign.status != CampaignStatus::Funding
-        {
+        if campaign.status != CampaignStatus::Active && campaign.status != CampaignStatus::Funding {
             panic!("campaign not accepting contributions");
         }
         if total_funded != campaign.total_funded {
@@ -287,7 +281,9 @@ impl ProductionEscrowContract {
         if is_terminal(&campaign.status) {
             panic!("cannot release tranche: campaign is in a terminal state");
         }
-        if campaign.status != CampaignStatus::Funded && campaign.status != CampaignStatus::InProduction {
+        if campaign.status != CampaignStatus::Funded
+            && campaign.status != CampaignStatus::InProduction
+        {
             panic!("campaign not funded or in production");
         }
         if amount > escrow_held(&campaign) {
@@ -338,7 +334,9 @@ impl ProductionEscrowContract {
         }
         farmer.require_auth();
 
-        if campaign.status != CampaignStatus::Funded && campaign.status != CampaignStatus::InProduction {
+        if campaign.status != CampaignStatus::Funded
+            && campaign.status != CampaignStatus::InProduction
+        {
             panic!("campaign not funded or in production");
         }
 
@@ -369,10 +367,8 @@ impl ProductionEscrowContract {
         }
 
         let is_farmer = campaign.farmer == opener;
-        let is_contributor =
-            storage::get_contribution(&env, campaign_id, &opener) > 0;
-        let is_admin =
-            storage::has_admin(&env) && storage::get_admin(&env) == opener;
+        let is_contributor = storage::get_contribution(&env, campaign_id, &opener) > 0;
+        let is_admin = storage::has_admin(&env) && storage::get_admin(&env) == opener;
         if !is_farmer && !is_contributor && !is_admin {
             panic!("not authorized to open dispute");
         }
@@ -409,8 +405,8 @@ impl ProductionEscrowContract {
         if campaign.status != CampaignStatus::Disputed {
             panic!("campaign not disputed");
         }
-        let mut dispute = storage::get_dispute(&env, campaign_id)
-            .unwrap_or_else(|| panic!("dispute not found"));
+        let mut dispute =
+            storage::get_dispute(&env, campaign_id).unwrap_or_else(|| panic!("dispute not found"));
         if dispute.status != DisputeStatus::Open {
             panic!("dispute already resolved");
         }
@@ -475,8 +471,7 @@ impl ProductionEscrowContract {
     pub fn claim_refund(env: Env, campaign_id: u64, investor: Address) {
         let campaign = storage::get_campaign(&env, campaign_id)
             .unwrap_or_else(|| panic!("campaign not found"));
-        if campaign.status != CampaignStatus::Resolved
-            && campaign.status != CampaignStatus::Failed
+        if campaign.status != CampaignStatus::Resolved && campaign.status != CampaignStatus::Failed
         {
             panic!("no refund available");
         }
@@ -619,6 +614,6 @@ impl ProductionEscrowContract {
 }
 
 #[cfg(test)]
-mod test;
-#[cfg(test)]
 mod proptest_invariants;
+#[cfg(test)]
+mod test;

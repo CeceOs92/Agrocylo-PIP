@@ -19,11 +19,14 @@ use production_escrow::{
     Campaign, CampaignStatus, DisputeResolution, ProductionEscrowContract,
     ProductionEscrowContractClient,
 };
-use registry::{ActivityAction, CampaignStatus as RegistryCampaignStatus, RegistryContract, RegistryContractClient};
+use registry::{
+    ActivityAction, CampaignStatus as RegistryCampaignStatus, RegistryContract,
+    RegistryContractClient,
+};
 use soroban_sdk::{
     testutils::{Address as _, Events},
     token::{Client as TokenClient, StellarAssetClient},
-    Address, Env, TryFromVal, Symbol,
+    Address, Env, Symbol, TryFromVal,
 };
 
 // ─── shared harness ──────────────────────────────────────────────────────
@@ -175,18 +178,15 @@ fn happy_path_full_lifecycle_settlement() {
         released: false,
     });
     h.escrow.configure_tranches(&h.campaign_id, &tranches);
-    h.escrow.release_tranche(&h.campaign_id, &h.farmer, &200i128);
+    h.escrow
+        .release_tranche(&h.campaign_id, &h.farmer, &200i128);
     assert_eq!(h.campaign().status, CampaignStatus::InProduction);
 
     // IN_PRODUCTION: farmer reports harvest -> Harvested
     let outcome = Symbol::new(&h.env, "good_yield");
-    h.escrow
-        .report_harvest(&h.campaign_id, &h.farmer, &outcome);
-    h.registry.record_activity(
-        &h.campaign_id,
-        &h.farmer,
-        &ActivityAction::HarvestReported,
-    );
+    h.escrow.report_harvest(&h.campaign_id, &h.farmer, &outcome);
+    h.registry
+        .record_activity(&h.campaign_id, &h.farmer, &ActivityAction::HarvestReported);
     assert_eq!(h.campaign().status, CampaignStatus::Harvested);
 
     // SETTLED: admin settles, farmer gets 500, investors share 300 pro-rata.
@@ -218,7 +218,10 @@ fn happy_path_full_lifecycle_settlement() {
     // Cross-contract consistency: registry saw one entry per lifecycle step.
     let activities = h.registry.get_campaign_activities(&h.campaign_id);
     assert_eq!(activities.len(), 5); // created, funded x2, harvested, settled
-    assert_eq!(activities.get(0).unwrap().action_type, ActivityAction::CampaignCreated);
+    assert_eq!(
+        activities.get(0).unwrap().action_type,
+        ActivityAction::CampaignCreated
+    );
     assert_eq!(
         activities.get(3).unwrap().action_type,
         ActivityAction::HarvestReported
@@ -286,8 +289,7 @@ fn disputed_campaign_partial_settlement_flow() {
 
     // Investor disputes the campaign before harvest.
     let reason = Symbol::new(&h.env, "delay");
-    h.escrow
-        .open_dispute(&h.campaign_id, &h.investor1, &reason);
+    h.escrow.open_dispute(&h.campaign_id, &h.investor1, &reason);
     h.registry.record_activity(
         &h.campaign_id,
         &h.investor1,
@@ -346,13 +348,9 @@ fn registry_activity_log_tracks_every_escrow_transition() {
     assert_eq!(h.activity_count(), 3); // + funded x2
 
     let outcome = Symbol::new(&h.env, "average_yield");
-    h.escrow
-        .report_harvest(&h.campaign_id, &h.farmer, &outcome);
-    h.registry.record_activity(
-        &h.campaign_id,
-        &h.farmer,
-        &ActivityAction::HarvestReported,
-    );
+    h.escrow.report_harvest(&h.campaign_id, &h.farmer, &outcome);
+    h.registry
+        .record_activity(&h.campaign_id, &h.farmer, &ActivityAction::HarvestReported);
     assert_eq!(h.activity_count(), 4);
 
     h.escrow
@@ -368,15 +366,13 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     let h = Harness::new();
     let crop = Symbol::new(&h.env, "maize");
     let region = Symbol::new(&h.env, "central");
-    h.registry.link_campaign_escrow(
-        &h.campaign_id,
-        &h.farmer,
-        &h.escrow.address,
-        &crop,
-        &region,
-    );
+    h.registry
+        .link_campaign_escrow(&h.campaign_id, &h.farmer, &h.escrow.address, &crop, &region);
     assert_eq!(
-        h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
+        h.registry
+            .get_campaign_record(&h.campaign_id)
+            .unwrap()
+            .status,
         RegistryCampaignStatus::Active
     );
 
@@ -392,7 +388,10 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     // The registry mirror has silently drifted: escrow says Failed,
     // registry still says Active, with no on-chain signal of it.
     assert_eq!(
-        h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
+        h.registry
+            .get_campaign_record(&h.campaign_id)
+            .unwrap()
+            .status,
         RegistryCampaignStatus::Active
     );
 
@@ -400,7 +399,10 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     let corrected = h.registry.reconcile_campaign_status(&h.campaign_id);
     assert!(corrected);
     assert_eq!(
-        h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
+        h.registry
+            .get_campaign_record(&h.campaign_id)
+            .unwrap()
+            .status,
         RegistryCampaignStatus::Failed
     );
     assert!(registry_emitted(&h, "CampaignStatusReconciled"));

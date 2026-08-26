@@ -140,9 +140,12 @@ describe('ActivityFeedItem', () => {
       </Wrapper>,
     );
 
+    // The badge carries the action label; the sentence underneath comes from
+    // formatActivityLine ("<actor> reported harvest on Campaign #1"). They are
+    // separate elements, so assert them separately.
     expect(screen.getByText('Harvest reported')).toBeInTheDocument();
     expect(
-      screen.getByText(/Harvest reported.*Campaign #1/i),
+      screen.getByText(/reported harvest on Campaign #1/i),
     ).toBeInTheDocument();
   });
 
