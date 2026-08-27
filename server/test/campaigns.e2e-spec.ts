@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -8,36 +8,7 @@ import { PrismaLibSql } from '@prisma/adapter-libsql';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/setup-app';
 import { PrismaClient } from './../generated/prisma/client';
-
-const MIGRATIONS_DIR = path.join(__dirname, '..', 'prisma', 'migrations');
-
-// CI runs against a fresh, unmigrated SQLite file, so the schema has to be
-// materialised here before the app boots. The libsql adapter executes only the
-// first statement of a multi-statement string, so each migration is applied one
-// statement at a time, in filename order. Mirrors the bootstrap used by the
-// indexer lifecycle e2e spec.
-async function applyMigrations(client: PrismaClient): Promise<void> {
-  const dirs = readdirSync(MIGRATIONS_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
-
-  for (const dir of dirs) {
-    const sql = readFileSync(
-      path.join(MIGRATIONS_DIR, dir, 'migration.sql'),
-      'utf8',
-    );
-    const statements = sql
-      .split(';')
-      .map((statement) => statement.trim())
-      .filter(
-        (statement) => statement.replace(/--.*$/gm, '').trim().length > 0,
-      );
-    for (const statement of statements) {
-      await client.$executeRawUnsafe(statement);
-    }
-  }
-}
+import { applyMigrations } from './apply-migrations';
 
 describe('Campaigns & Investors API (e2e)', () => {
   let app: INestApplication;
