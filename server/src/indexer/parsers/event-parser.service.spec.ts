@@ -189,9 +189,12 @@ describe('EventParserService', () => {
   describe('ContribReconciled', () => {
     it('is parsed (not silently dropped), increments totalFunded, and persists a Transaction row tagged distinctly from ContribReceived', async () => {
       const emitCampaignEvent = jest.fn();
-      const withRealtime = new EventParserService(prisma as any, {
-        emitCampaignEvent,
-      } as any);
+      const withRealtime = new EventParserService(
+        prisma as any,
+        {
+          emitCampaignEvent,
+        } as any,
+      );
 
       await withRealtime.processEvent(
         rawEvent(
