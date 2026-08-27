@@ -1,13 +1,16 @@
 import { Logger, OnModuleInit } from '@nestjs/common';
 import {
   ConnectedSocket,
+  GatewayMetadata,
   MessageBody,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
 import { SkipThrottle } from '@nestjs/throttler';
+import type { IncomingMessage } from 'http';
 import type { Server, Socket } from 'socket.io';
+import configuration from '../config/configuration';
 import { RealtimeEventsService } from './realtime-events.service';
 import {
   ACTIVITY_ROOM,
@@ -20,12 +23,54 @@ import {
   type CampaignEventPayload,
 } from './events.types';
 
+export function createWebSocketGatewayOptions(
+  allowedOrigins: string[],
+): GatewayMetadata {
+  const originAllowlist = new Set(allowedOrigins);
+
+  return {
+    cors: {
+      origin: allowedOrigins,
+      credentials: true,
+    },
+    // CORS headers protect HTTP polling in browsers, but WebSocket upgrades
+    // must be rejected explicitly because the WebSocket protocol does not
+    // enforce browser CORS rules.
+    allowRequest: (
+      request: IncomingMessage,
+      callback: (error: string | null | undefined, success: boolean) => void,
+    ): void => {
+      const origin = request.headers.origin;
+      const isAllowed =
+        typeof origin === 'string' && originAllowlist.has(origin);
+
+      callback(isAllowed ? null : 'Origin not allowed', isAllowed);
+    },
+  };
+}
+
+export const webSocketGatewayOptions = createWebSocketGatewayOptions(
+  configuration().app.corsAllowedOrigins,
+);
+
 /**
  * Push channel for campaign updates. Clients opt into rooms explicitly
  * (per-campaign + the global activity feed) rather than receiving a
  * firehose of every event for every campaign.
+ *
+ * AUTHENTICATION & SECURITY DECISION:
+ * - Campaign events broadcast over this gateway represent public campaign lifecycle
+ *   activity (e.g., funding progress, status changes) designed for open marketplace
+ *   discovery and live progress tracking, accessible to both guest and authenticated users.
+ * - Consequently, socket connection-level authentication is intentionally deferred/omitted
+ *   for these public event streams.
+ * - Security is maintained via CORS origin controls (configured dynamically via CorsSocketIoAdapter)
+ *   and explicit room subscriptions.
+ * - Should future features introduce sensitive/private event streams (such as admin dispute
+ *   details or private user notifications), token-based authentication guards must be added
+ *   at connection time (e.g., handshake tokens) or message handle level.
  */
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway(webSocketGatewayOptions)
 @SkipThrottle()
 export class CampaignEventsGateway implements OnModuleInit {
   @WebSocketServer()

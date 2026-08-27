@@ -9,17 +9,19 @@ The `ProductionEscrowContract` manages the lifecycle of agricultural production 
 ### Campaign Lifecycle
 
 ```
-Funding -> Funded -> InProduction -> Harvested -> Settled
+Active -> Funding -> Funded -> InProduction -> Harvested -> Settled
 ```
 
 Alternative terminal states:
 - `Failed`
 - `Disputed`
+- `Resolved`
 
 ### Campaign Statuses
 
 | Status        | Description                                      |
 |---------------|--------------------------------------------------|
+| `Active`      | Campaign created, no contributions yet           |
 | `Funding`     | Campaign created, accepting investor funds       |
 | `Funded`      | Minimum funding goal reached                     |
 | `InProduction`| Production phase started                         |
@@ -27,6 +29,7 @@ Alternative terminal states:
 | `Settled`     | Funds distributed according to campaign rules    |
 | `Failed`      | Campaign failed, refunds processed               |
 | `Disputed`    | Dispute initiated, awaiting resolution           |
+| `Resolved`    | Dispute resolved, funds allocated                |
 
 ## Public Methods
 
