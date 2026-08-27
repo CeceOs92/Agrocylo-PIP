@@ -1,9 +1,43 @@
+import { readdirSync, readFileSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { PrismaLibSql } from '@prisma/adapter-libsql';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/setup-app';
 import { PrismaClient } from './../generated/prisma/client';
+
+const MIGRATIONS_DIR = path.join(__dirname, '..', 'prisma', 'migrations');
+
+// CI runs against a fresh, unmigrated SQLite file, so the schema has to be
+// materialised here before the app boots. The libsql adapter executes only the
+// first statement of a multi-statement string, so each migration is applied one
+// statement at a time, in filename order. Mirrors the bootstrap used by the
+// indexer lifecycle e2e spec.
+async function applyMigrations(client: PrismaClient): Promise<void> {
+  const dirs = readdirSync(MIGRATIONS_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+
+  for (const dir of dirs) {
+    const sql = readFileSync(
+      path.join(MIGRATIONS_DIR, dir, 'migration.sql'),
+      'utf8',
+    );
+    const statements = sql
+      .split(';')
+      .map((statement) => statement.trim())
+      .filter(
+        (statement) => statement.replace(/--.*$/gm, '').trim().length > 0,
+      );
+    for (const statement of statements) {
+      await client.$executeRawUnsafe(statement);
+    }
+  }
+}
 
 describe('Campaigns & Investors API (e2e)', () => {
   let app: INestApplication;
@@ -14,7 +48,24 @@ describe('Campaigns & Investors API (e2e)', () => {
   const campaignId = 'e2e-campaign-1';
   const settledCampaignId = 'e2e-campaign-2';
 
+  const dbPath = path.join(
+    os.tmpdir(),
+    `agro-campaigns-e2e-${process.pid}-${Date.now()}.db`,
+  );
+  const previousDatabaseUrl = process.env.DATABASE_URL;
+
   beforeAll(async () => {
+    // Point both this bootstrap and the app's own PrismaClient at an isolated,
+    // freshly migrated database so the assertions never see leftover state.
+    rmSync(dbPath, { force: true });
+    process.env.DATABASE_URL = `file:${dbPath}`;
+
+    const migrator = new PrismaClient({
+      adapter: new PrismaLibSql({ url: `file:${dbPath}` }),
+    });
+    await applyMigrations(migrator);
+    await migrator.$disconnect();
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -115,14 +166,13 @@ describe('Campaigns & Investors API (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.dispute.deleteMany({ where: { campaignId } });
-    await prisma.tranche.deleteMany({ where: { campaignId } });
-    await prisma.investment.deleteMany({
-      where: { campaignId: { in: [campaignId, settledCampaignId] } },
-    });
-    await prisma.campaign.delete({ where: { id: campaignId } });
-    await prisma.campaign.delete({ where: { id: settledCampaignId } });
     await app.close();
+    rmSync(dbPath, { force: true });
+    if (previousDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL;
+    } else {
+      process.env.DATABASE_URL = previousDatabaseUrl;
+    }
   });
 
   it('GET /campaigns is paginated and filters by status', async () => {
@@ -134,9 +184,9 @@ describe('Campaigns & Investors API (e2e)', () => {
     expect(res.body.meta).toEqual(
       expect.objectContaining({ page: 1, limit: 10 }),
     );
-    expect(
-      res.body.data.some((c: { id: string }) => c.id === campaignId),
-    ).toBe(true);
+    expect(res.body.data.some((c: { id: string }) => c.id === campaignId)).toBe(
+      true,
+    );
     expect(
       res.body.data.every((c: { status: string }) => c.status === 'Resolved'),
     ).toBe(true);

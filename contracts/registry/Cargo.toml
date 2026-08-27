@@ -8,7 +8,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 soroban-sdk = { workspace = true }
-production_escrow = { path = "../production_escrow" }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }

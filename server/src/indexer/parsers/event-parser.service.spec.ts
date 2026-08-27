@@ -736,9 +736,12 @@ describe('EventParserService', () => {
   describe('broadcast-after-persist wiring', () => {
     it('emits a realtime event only after the DB write succeeds', async () => {
       const emitCampaignEvent = jest.fn();
-      const withRealtime = new EventParserService(prisma as any, {
-        emitCampaignEvent,
-      } as any);
+      const withRealtime = new EventParserService(
+        prisma as any,
+        {
+          emitCampaignEvent,
+        } as any,
+      );
 
       await withRealtime.processEvent(
         rawEvent(
@@ -760,9 +763,12 @@ describe('EventParserService', () => {
     it('does not emit for already-persisted (replayed) events', async () => {
       const emitCampaignEvent = jest.fn();
       prisma.transaction.findUnique.mockResolvedValueOnce({ id: 'e-rt2' });
-      const withRealtime = new EventParserService(prisma as any, {
-        emitCampaignEvent,
-      } as any);
+      const withRealtime = new EventParserService(
+        prisma as any,
+        {
+          emitCampaignEvent,
+        } as any,
+      );
 
       await withRealtime.processEvent(
         rawEvent(
@@ -777,9 +783,12 @@ describe('EventParserService', () => {
 
     it('does not emit when the parsed event has no campaignId', async () => {
       const emitCampaignEvent = jest.fn();
-      const withRealtime = new EventParserService(prisma as any, {
-        emitCampaignEvent,
-      } as any);
+      const withRealtime = new EventParserService(
+        prisma as any,
+        {
+          emitCampaignEvent,
+        } as any,
+      );
 
       await withRealtime.processEvent(
         rawEvent(
