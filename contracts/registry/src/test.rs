@@ -135,7 +135,9 @@ fn test_revoke_contract() {
 
 #[test]
 fn test_approve_contract_requires_admin_auth() {
-    let (env, admin, _, contract_addr, client) = create_test_env();
+    // This test generates its own admin/contract addresses below, so the ones
+    // returned by the harness are deliberately discarded.
+    let (env, _, _, _, client) = create_test_env();
 
     let admin = Address::generate(&env);
     let contract_addr = Address::generate(&env);
@@ -494,7 +496,7 @@ fn test_register_farmer_requires_authorization() {
 
 #[test]
 fn test_get_farmer_nonexistent() {
-    let (env, admin, user, _, client) = create_test_env();
+    let (_, admin, user, _, client) = create_test_env();
     client.initialize(&admin);
 
     let farmer_profile = client.get_farmer(&user);
@@ -597,7 +599,7 @@ fn test_register_campaign_requires_authorization() {
 
 #[test]
 fn test_get_campaign_nonexistent() {
-    let (env, admin, _, _, client) = create_test_env();
+    let (_, admin, _, _, client) = create_test_env();
     client.initialize(&admin);
 
     let campaign = client.get_campaign(&999u64);
@@ -665,7 +667,7 @@ fn test_link_campaign_escrow_success() {
 
     client.link_campaign_escrow(&campaign_id, &user, &escrow, &crop, &region);
 
-    let record = client.get_campaign_record(&campaign_id);
+    let record = client.get_campaign_record(&campaign_id).unwrap();
     assert_eq!(record.campaign_id, campaign_id);
     assert_eq!(record.farmer, user);
     assert_eq!(record.escrow_contract, escrow);
@@ -687,12 +689,12 @@ fn test_link_campaign_escrow_duplicate_fails() {
 }
 
 #[test]
-#[should_panic(expected = "campaign not found")]
-fn test_get_campaign_record_nonexistent_fails() {
+fn test_get_campaign_record_nonexistent_returns_none() {
     let (_env, admin, _, _, client) = create_test_env();
     client.initialize(&admin);
 
-    client.get_campaign_record(&999u64);
+    let record = client.get_campaign_record(&999u64);
+    assert!(record.is_none());
 }
 
 #[test]
@@ -707,7 +709,7 @@ fn test_update_campaign_status_as_escrow_contract() {
 
     client.update_campaign_status(&campaign_id, &escrow, &CampaignStatus::Funding);
 
-    let record = client.get_campaign_record(&campaign_id);
+    let record = client.get_campaign_record(&campaign_id).unwrap();
     assert_eq!(record.status, CampaignStatus::Funding);
 
     let event = env.events().all().last().unwrap();
@@ -729,7 +731,7 @@ fn test_update_campaign_status_as_admin() {
 
     client.update_campaign_status(&campaign_id, &admin, &CampaignStatus::Settled);
 
-    let record = client.get_campaign_record(&campaign_id);
+    let record = client.get_campaign_record(&campaign_id).unwrap();
     assert_eq!(record.status, CampaignStatus::Settled);
 }
 
@@ -773,4 +775,94 @@ fn test_get_campaigns_by_farmer_empty() {
 
     let campaigns = client.get_campaigns_by_farmer(&user);
     assert_eq!(campaigns.len(), 0);
+}
+
+// Paginated list storage tests (Issue #157: bounded ledger entries)
+
+#[test]
+fn test_activities_paginate_across_multiple_pages() {
+    let (env, admin, _, _, client) = create_test_env();
+    // Writing several hundred records in one test exceeds the default mock
+    // budget; each write is a separate transaction in production.
+    env.budget().reset_unlimited();
+    client.initialize(&admin);
+
+    let campaign_id = 1u64;
+    let max_per_page = crate::storage::MAX_ACTIVITIES_PER_PAGE;
+    // Enough entries to fill two full pages plus a partial third.
+    let total = max_per_page * 2 + 25;
+
+    let actions = [
+        ActivityAction::CampaignCreated,
+        ActivityAction::FarmerRegistered,
+        ActivityAction::CampaignRegistered,
+        ActivityAction::CampaignFunded,
+        ActivityAction::CampaignStatusChanged,
+        ActivityAction::FundsReleased,
+        ActivityAction::HarvestReported,
+        ActivityAction::DisputeInitiated,
+        ActivityAction::DisputeResolved,
+        ActivityAction::CampaignSettled,
+    ];
+
+    for i in 0..total {
+        client.record_activity(
+            &campaign_id,
+            &admin,
+            &actions[(i % actions.len() as u32) as usize],
+        );
+    }
+
+    // A fresh page is opened every time the previous one fills up.
+    let page_count = client.get_campaign_activity_page_count(&campaign_id);
+    assert_eq!(page_count, total / max_per_page + 1);
+
+    // Every page but the last is full; the last page holds the remainder.
+    let first_page = client.get_campaign_activities_page(&campaign_id, &0u32);
+    assert_eq!(first_page.len(), max_per_page);
+    let last_page = client.get_campaign_activities_page(&campaign_id, &(page_count - 1));
+    assert_eq!(last_page.len(), total % max_per_page);
+
+    // Reading everything still returns all records, in insertion order.
+    let activities = client.get_campaign_activities(&campaign_id);
+    assert_eq!(activities.len(), total);
+    for i in 0..total {
+        let expected = actions[(i % actions.len() as u32) as usize].clone();
+        assert_eq!(activities.get(i).unwrap().action_type, expected);
+    }
+}
+
+#[test]
+fn test_farmer_campaigns_paginate_across_multiple_pages() {
+    let (env, admin, user, escrow, client) = create_test_env();
+    // Linking hundreds of campaigns in one test exceeds the default mock
+    // budget; each link is a separate transaction in production.
+    env.budget().reset_unlimited();
+    client.initialize(&admin);
+
+    let crop = Symbol::new(&env, "coffee");
+    let region = Symbol::new(&env, "highlands");
+
+    let max_per_page = crate::storage::MAX_FARMER_CAMPAIGNS_PER_PAGE;
+    // Enough campaign links to span three pages.
+    let total = max_per_page * 2 + 25;
+
+    for i in 0..total {
+        client.link_campaign_escrow(&(i as u64), &user, &escrow, &crop, &region);
+    }
+
+    let page_count = client.get_farmer_campaigns_page_count(&user);
+    assert_eq!(page_count, total / max_per_page + 1);
+
+    let first_page = client.get_campaigns_by_farmer_page(&user, &0u32);
+    assert_eq!(first_page.len(), max_per_page);
+    let last_page = client.get_campaigns_by_farmer_page(&user, &(page_count - 1));
+    assert_eq!(last_page.len(), total % max_per_page);
+
+    // Reading everything still returns all campaign ids, in link order.
+    let campaigns = client.get_campaigns_by_farmer(&user);
+    assert_eq!(campaigns.len(), total);
+    for i in 0..total {
+        assert_eq!(campaigns.get(i).unwrap(), i as u64);
+    }
 }

@@ -1,3 +1,12 @@
+//! Shared `#[contracttype]` definitions for ProductionEscrowContract.
+//!
+//! These live in their own crate rather than inside `production_escrow` so
+//! that `registry` can decode escrow values without depending on the escrow
+//! contract crate. Every `#[contracttype]` is encoded by field/variant name,
+//! so moving the definitions here does not change their XDR representation.
+
+#![no_std]
+
 use soroban_sdk::{contracttype, Address, Symbol, Vec};
 
 #[contracttype]
@@ -82,7 +91,6 @@ pub struct Tranche {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DataKey {
     Admin,
-    Registry,
     Campaign(u64),
     Dispute(u64),
     Contribution(u64, Address),
