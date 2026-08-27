@@ -433,7 +433,7 @@ describe('EventParserService', () => {
       });
       expect(prisma.campaign.update).toHaveBeenCalledWith({
         where: { id: '123' },
-        data: { status: 'Resolved' },
+        data: { status: 'Resolved', refundable: { increment: 50n } },
       });
     });
 
@@ -449,7 +449,7 @@ describe('EventParserService', () => {
       expect(prisma.dispute.update).not.toHaveBeenCalled();
       expect(prisma.campaign.update).toHaveBeenCalledWith({
         where: { id: '123' },
-        data: { status: 'Resolved' },
+        data: { status: 'Resolved', refundable: { increment: 500n } },
       });
     });
 
@@ -473,7 +473,7 @@ describe('EventParserService', () => {
       );
       expect(prisma.campaign.update).toHaveBeenCalledWith({
         where: { id: '123' },
-        data: { status: 'Settled' },
+        data: { status: 'Settled', returnable: { increment: 100n } },
       });
     });
 

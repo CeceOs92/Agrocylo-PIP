@@ -1165,7 +1165,14 @@ export class EventParserService {
 
     await this.prisma.campaign.update({
       where: { id: data.campaignId },
-      data: { status: 'Resolved' },
+      data: {
+        status: 'Resolved',
+        // Mirrors ProductionEscrowContract's `campaign.refundable += refundable_to_investors`
+        // in resolve_dispute -- without this, RegistryContract-facing consumers
+        // (e.g. the investor portfolio endpoint) can never see a dispute-driven
+        // refund, since only mark_failed's refundable was previously persisted here.
+        refundable: { increment: BigInt(data.refundableToInvestors) },
+      },
     });
     this.logger.log(
       { campaignId: data.campaignId, resolution: data.resolution },
@@ -1177,7 +1184,13 @@ export class EventParserService {
     const data = parsed.data as unknown as CampaignSettledData;
     await this.prisma.campaign.update({
       where: { id: data.campaignId },
-      data: { status: 'Settled' },
+      data: {
+        status: 'Settled',
+        // Mirrors ProductionEscrowContract's `campaign.returnable += investor_returns`
+        // in settle_campaign, so investor-facing consumers can compute pro-rata
+        // claimable shares for settled campaigns (see InvestorsService.portfolio).
+        returnable: { increment: BigInt(data.investorReturns) },
+      },
     });
     this.logger.log(
       { campaignId: data.campaignId, farmerPayout: data.farmerPayout },
