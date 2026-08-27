@@ -438,3 +438,72 @@ fn contract_emitted(env: &Env, contract_id: &Address, topic_name: &str) -> bool 
                 .unwrap_or(false)
     })
 }
+
+// ─── on-chain escrow -> registry wiring (issue #96) ─────────────────────
+
+/// With `set_registry` configured and the escrow contract approved, escrow
+/// lifecycle calls alone (no manual `record_activity`/`update_campaign_status`
+/// from the test, unlike `Harness` above) populate the registry's activity
+/// log and status mirror.
+#[test]
+fn escrow_wired_to_registry_populates_activity_and_status() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let escrow_id = env.register_contract(None, ProductionEscrowContract);
+    let escrow = ProductionEscrowContractClient::new(&env, &escrow_id);
+    let registry_id = env.register_contract(None, RegistryContract);
+    let registry = RegistryContractClient::new(&env, &registry_id);
+
+    let admin = Address::generate(&env);
+    let farmer = Address::generate(&env);
+    let investor = Address::generate(&env);
+
+    let token_admin = env.register_stellar_asset_contract_v2(admin.clone());
+    let token = token_admin.address();
+    StellarAssetClient::new(&env, &token).mint(&investor, &1000i128);
+
+    registry.initialize(&admin);
+    registry.approve_contract(&escrow_id);
+    escrow.initialize(&admin);
+    escrow.set_registry(&registry_id);
+
+    let campaign_id = 1u64;
+    escrow.create_campaign(
+        &campaign_id,
+        &farmer,
+        &1000i128,
+        &token,
+        &1_000_000u64,
+        &Symbol::new(&env, "maize"),
+    );
+    escrow.fund_campaign(&campaign_id, &investor, &1000i128);
+
+    // create_campaign -> link + CampaignCreated, fund_campaign (Funded) -> CampaignFunded + status sync.
+    let activities = registry.get_campaign_activities(&campaign_id);
+    assert_eq!(activities.len(), 2);
+    assert_eq!(
+        activities.get(0).unwrap().action_type,
+        ActivityAction::CampaignCreated
+    );
+    assert_eq!(
+        activities.get(1).unwrap().action_type,
+        ActivityAction::CampaignFunded
+    );
+
+    let record = registry.get_campaign_record(&campaign_id).unwrap();
+    assert_eq!(record.status, RegistryCampaignStatus::Funded);
+}
+
+// NOTE: a test asserting that an unapproved escrow contract's registry calls
+// panic predictably was attempted here and removed -- it does not currently
+// hold. `link_campaign_escrow`'s `is_contract_approved` check only decides
+// *who* must authorize (the escrow itself vs. the farmer), and since
+// `create_campaign` already carries the farmer's auth, an unapproved escrow
+// still links successfully. `update_campaign_status` afterwards only checks
+// `caller == record.escrow_contract`, which the escrow itself always
+// satisfies regardless of the approved-contracts list. So today, approval
+// gates nothing an escrow contract can't already do to its own linked
+// campaigns via self-authorization. This is a real gap worth a follow-up
+// (e.g. `update_campaign_status` additionally requiring
+// `is_contract_approved(escrow_contract)`), not something fixed here.
