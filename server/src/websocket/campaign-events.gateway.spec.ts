@@ -1,4 +1,10 @@
-import { CampaignEventsGateway } from './campaign-events.gateway';
+import { GATEWAY_OPTIONS } from '@nestjs/websockets/constants';
+import {
+  CampaignEventsGateway,
+  createWebSocketGatewayOptions,
+  webSocketGatewayOptions,
+} from './campaign-events.gateway';
+import configuration from '../config/configuration';
 import { RealtimeEventsService } from './realtime-events.service';
 import { ACTIVITY_ROOM, campaignRoom } from './events.types';
 
@@ -18,6 +24,46 @@ describe('CampaignEventsGateway', () => {
     emit = jest.fn();
     to = jest.fn().mockReturnValue({ emit });
     gateway.server = { to } as any;
+  });
+
+  describe('origin allowlist', () => {
+    const allowedOrigin = 'https://app.agrocylo.example';
+
+    it('configures the gateway without a wildcard origin', () => {
+      const gatewayOptions = Reflect.getMetadata(
+        GATEWAY_OPTIONS,
+        CampaignEventsGateway,
+      );
+
+      expect(gatewayOptions).toBeDefined();
+      expect(gatewayOptions.cors.origin).toEqual(
+        configuration().app.corsAllowedOrigins,
+      );
+      expect(gatewayOptions).toEqual(webSocketGatewayOptions);
+      expect(gatewayOptions.cors.origin).not.toContain('*');
+      expect(gatewayOptions.allowRequest).toEqual(expect.any(Function));
+    });
+
+    it('allows a handshake from a configured origin', () => {
+      const options = createWebSocketGatewayOptions([allowedOrigin]);
+      const callback = jest.fn();
+
+      options.allowRequest?.({ headers: { origin: allowedOrigin } }, callback);
+
+      expect(callback).toHaveBeenCalledWith(null, true);
+    });
+
+    it.each([undefined, 'https://evil.example'])(
+      'rejects a handshake from origin %s',
+      (origin) => {
+        const options = createWebSocketGatewayOptions([allowedOrigin]);
+        const callback = jest.fn();
+
+        options.allowRequest?.({ headers: { origin } }, callback);
+
+        expect(callback).toHaveBeenCalledWith('Origin not allowed', false);
+      },
+    );
   });
 
   it('joins a client to a campaign room on subscribe', () => {

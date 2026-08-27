@@ -21,7 +21,7 @@
 //!   CampaignStatusUpdated, ActivityRecorded
 
 use production_escrow::{
-    CampaignStatus, DisputeResolution, ProductionEscrowContract, ProductionEscrowContractClient,
+    DisputeResolution, ProductionEscrowContract, ProductionEscrowContractClient,
 };
 use registry::{ActivityAction, RegistryContract, RegistryContractClient};
 use soroban_sdk::{
