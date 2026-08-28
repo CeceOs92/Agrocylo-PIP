@@ -116,10 +116,13 @@ cargo test
 
 ```
 contracts/
+├── escrow_types/       # Escrow data types, shared — NOT a contract crate
+│   ├── src/
+│   │   └── lib.rs     # #[contracttype] definitions for the escrow's wire format
+│   └── Cargo.toml
 ├── production_escrow/  # Production escrow contract implementation
 │   ├── src/
 │   │   ├── lib.rs     # Contract entry point
-│   │   ├── types.rs   # Data types and enums
 │   │   ├── storage.rs # Storage utilities
 │   │   ├── events.rs  # Event definitions
 │   │   └── test.rs    # Test suite
@@ -131,12 +134,23 @@ contracts/
 │   │   ├── storage.rs # Storage utilities
 │   │   ├── admin.rs   # Admin access control
 │   │   ├── activity.rs # Activity logging
+│   │   ├── campaign.rs # Campaign records and status reconciliation
+│   │   ├── escrow.rs  # Declared client for cross-contract escrow calls
 │   │   ├── events.rs  # Event definitions
 │   │   └── test.rs    # Test suite
 │   └── Cargo.toml
+├── integration_tests/  # Cross-contract end-to-end tests
 ├── INTEGRATION.md      # Contract integration documentation
 └── Cargo.toml          # Workspace configuration
 ```
+
+> **Why `escrow_types` is a separate crate:** `registry` needs the escrow's
+> `Campaign`/`CampaignStatus` types to reconcile campaign status, but it must
+> not depend on the `production_escrow` crate. Both contracts export
+> `initialize`, `get_admin` and `get_campaign`, so linking one into the other
+> puts duplicate symbols in the wasm module and the release build fails. The
+> types live in a plain library crate, and `registry/src/escrow.rs` declares
+> the escrow client with `#[contractclient]` instead of linking the contract.
 
 ## License
 

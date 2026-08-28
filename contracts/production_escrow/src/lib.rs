@@ -2,9 +2,11 @@
 
 pub mod events;
 mod storage;
-mod types;
 
-pub use types::*;
+// The contract's data types live in the `escrow_types` crate so that other
+// contracts can decode them without linking this one. Re-exported here so
+// `production_escrow::Campaign` and friends keep working for dependents.
+pub use escrow_types::*;
 
 use events::*;
 use soroban_sdk::{
@@ -225,9 +227,7 @@ impl ProductionEscrowContract {
 
         let mut campaign = storage::get_campaign(&env, campaign_id)
             .unwrap_or_else(|| panic!("campaign not found"));
-        if campaign.status != CampaignStatus::Active
-            && campaign.status != CampaignStatus::Funding
-        {
+        if campaign.status != CampaignStatus::Active && campaign.status != CampaignStatus::Funding {
             panic!("campaign not accepting contributions");
         }
 
@@ -327,9 +327,7 @@ impl ProductionEscrowContract {
 
         let mut campaign = storage::get_campaign(&env, campaign_id)
             .unwrap_or_else(|| panic!("campaign not found"));
-        if campaign.status != CampaignStatus::Active
-            && campaign.status != CampaignStatus::Funding
-        {
+        if campaign.status != CampaignStatus::Active && campaign.status != CampaignStatus::Funding {
             panic!("campaign not accepting contributions");
         }
         if total_funded != campaign.total_funded {
@@ -538,8 +536,8 @@ impl ProductionEscrowContract {
         if campaign.status != CampaignStatus::Disputed {
             panic!("campaign not disputed");
         }
-        let mut dispute = storage::get_dispute(&env, campaign_id)
-            .unwrap_or_else(|| panic!("dispute not found"));
+        let mut dispute =
+            storage::get_dispute(&env, campaign_id).unwrap_or_else(|| panic!("dispute not found"));
         if dispute.status != DisputeStatus::Open {
             panic!("dispute already resolved");
         }
@@ -611,8 +609,7 @@ impl ProductionEscrowContract {
     pub fn claim_refund(env: Env, campaign_id: u64, investor: Address) {
         let campaign = storage::get_campaign(&env, campaign_id)
             .unwrap_or_else(|| panic!("campaign not found"));
-        if campaign.status != CampaignStatus::Resolved
-            && campaign.status != CampaignStatus::Failed
+        if campaign.status != CampaignStatus::Resolved && campaign.status != CampaignStatus::Failed
         {
             panic!("no refund available");
         }

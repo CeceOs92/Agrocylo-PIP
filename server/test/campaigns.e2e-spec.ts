@@ -1,9 +1,14 @@
+import { rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { PrismaLibSql } from '@prisma/adapter-libsql';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/setup-app';
 import { PrismaClient } from './../generated/prisma/client';
+import { applyMigrations } from './apply-migrations';
 
 describe('Campaigns & Investors API (e2e)', () => {
   let app: INestApplication;
@@ -14,7 +19,24 @@ describe('Campaigns & Investors API (e2e)', () => {
   const campaignId = 'e2e-campaign-1';
   const settledCampaignId = 'e2e-campaign-2';
 
+  const dbPath = path.join(
+    os.tmpdir(),
+    `agro-campaigns-e2e-${process.pid}-${Date.now()}.db`,
+  );
+  const previousDatabaseUrl = process.env.DATABASE_URL;
+
   beforeAll(async () => {
+    // Point both this bootstrap and the app's own PrismaClient at an isolated,
+    // freshly migrated database so the assertions never see leftover state.
+    rmSync(dbPath, { force: true });
+    process.env.DATABASE_URL = `file:${dbPath}`;
+
+    const migrator = new PrismaClient({
+      adapter: new PrismaLibSql({ url: `file:${dbPath}` }),
+    });
+    await applyMigrations(migrator);
+    await migrator.$disconnect();
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -115,14 +137,13 @@ describe('Campaigns & Investors API (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.dispute.deleteMany({ where: { campaignId } });
-    await prisma.tranche.deleteMany({ where: { campaignId } });
-    await prisma.investment.deleteMany({
-      where: { campaignId: { in: [campaignId, settledCampaignId] } },
-    });
-    await prisma.campaign.delete({ where: { id: campaignId } });
-    await prisma.campaign.delete({ where: { id: settledCampaignId } });
     await app.close();
+    rmSync(dbPath, { force: true });
+    if (previousDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL;
+    } else {
+      process.env.DATABASE_URL = previousDatabaseUrl;
+    }
   });
 
   it('GET /campaigns is paginated and filters by status', async () => {
@@ -134,9 +155,9 @@ describe('Campaigns & Investors API (e2e)', () => {
     expect(res.body.meta).toEqual(
       expect.objectContaining({ page: 1, limit: 10 }),
     );
-    expect(
-      res.body.data.some((c: { id: string }) => c.id === campaignId),
-    ).toBe(true);
+    expect(res.body.data.some((c: { id: string }) => c.id === campaignId)).toBe(
+      true,
+    );
     expect(
       res.body.data.every((c: { status: string }) => c.status === 'Resolved'),
     ).toBe(true);

@@ -1,6 +1,8 @@
+use crate::escrow::ProductionEscrowContractClient;
 use crate::types::{CampaignInfo, CampaignRecord, CampaignStatus};
 use crate::{events, storage};
-use soroban_sdk::{contracttype, Address, Env, IntoVal, String, Symbol, Val, Vec};
+use escrow_types::CampaignStatus as EscrowCampaignStatus;
+use soroban_sdk::{Address, Env, String, Symbol, Vec};
 
 pub fn register_campaign(
     env: &Env,
@@ -98,36 +100,22 @@ pub fn update_campaign_status(
 pub fn get_campaign_record(env: &Env, campaign_id: u64) -> Option<CampaignRecord> {
     storage::get_campaign_record(env, campaign_id)
 }
-/// Mirrors `production_escrow::Campaign` field-for-field, so this module can
-/// decode `ProductionEscrowContract::get_campaign`'s return value without a
-/// compile-time dependency on the `production_escrow` crate -- pulling in its
-/// `#[contract]`/`#[contractimpl]` block as a library would statically link
-/// its exported wasm symbols into this crate's own binary, colliding with
-/// registry's identically-named entrypoints (e.g. `initialize`, `get_admin`,
-/// `get_campaign`).
-///
-/// This must have the *exact same field count and names* as the real
-/// `Campaign` struct: on-chain, `Val`-based struct decoding
-/// (`Env::map_unpack_to_slice`, used by cross-contract calls) requires the
-/// wire map and the local struct to be the same size -- unlike the
-/// `ScVal`-based (host/testutils-only) decode path, it does not tolerate a
-/// struct with a subset of fields. `CampaignStatus` here is registry's own
-/// type (not a distinct escrow-side mirror) -- its variant names are
-/// identical to production_escrow's `CampaignStatus`, so it decodes the
-/// escrow's status value directly with no separate mapping step required.
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-struct EscrowCampaignView {
-    pub farmer: Address,
-    pub target_amount: i128,
-    pub token_address: Address,
-    pub deadline: u64,
-    pub harvest_metadata: Symbol,
-    pub total_funded: i128,
-    pub released: i128,
-    pub refundable: i128,
-    pub returnable: i128,
-    pub status: CampaignStatus,
+/// Maps the escrow contract's `CampaignStatus` onto the registry's own
+/// `CampaignStatus` type. Kept as two distinct enums (rather than reusing
+/// production_escrow's type directly as the record field type) so the
+/// registry's on-chain schema is not silently reshaped by escrow changes.
+fn map_escrow_status(status: &EscrowCampaignStatus) -> CampaignStatus {
+    match status {
+        EscrowCampaignStatus::Active => CampaignStatus::Active,
+        EscrowCampaignStatus::Funding => CampaignStatus::Funding,
+        EscrowCampaignStatus::Funded => CampaignStatus::Funded,
+        EscrowCampaignStatus::InProduction => CampaignStatus::InProduction,
+        EscrowCampaignStatus::Harvested => CampaignStatus::Harvested,
+        EscrowCampaignStatus::Disputed => CampaignStatus::Disputed,
+        EscrowCampaignStatus::Resolved => CampaignStatus::Resolved,
+        EscrowCampaignStatus::Settled => CampaignStatus::Settled,
+        EscrowCampaignStatus::Failed => CampaignStatus::Failed,
+    }
 }
 
 /// Permissionless reconciliation: re-derives the campaign's true status by
@@ -176,4 +164,12 @@ pub fn reconcile_campaign_status(env: &Env, campaign_id: u64) -> bool {
 
 pub fn get_campaigns_by_farmer(env: &Env, farmer: &Address) -> Vec<u64> {
     storage::get_farmer_campaigns(env, farmer)
+}
+
+pub fn get_campaigns_by_farmer_page_count(env: &Env, farmer: &Address) -> u32 {
+    storage::get_farmer_campaigns_page_count(env, farmer)
+}
+
+pub fn get_campaigns_by_farmer_page(env: &Env, farmer: &Address, page: u32) -> Vec<u64> {
+    storage::get_farmer_campaigns_page(env, farmer, page)
 }

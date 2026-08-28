@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use super::*;
 use soroban_sdk::{
     testutils::{Address as _, Events},
@@ -1506,9 +1504,14 @@ fn test_claim_return_is_pro_rata() {
 
     assert_eq!(token.balance(&s.investor1), inv1_before + 360);
     assert_eq!(token.balance(&s.investor2), inv2_before + 240);
+
+    // The pool must cover every claim: assert against what was actually paid
+    // out, not against the literals above.
+    let claimed =
+        (token.balance(&s.investor1) - inv1_before) + (token.balance(&s.investor2) - inv2_before);
     assert!(
-        (360 + 240) <= 600,
-        "sum of claims must be less than return pool"
+        claimed <= 600,
+        "sum of claims ({claimed}) must not exceed the return pool"
     );
 }
 
@@ -1668,26 +1671,36 @@ fn test_claim_return_truncation_dust_remains_in_contract() {
 #[test]
 fn test_open_dispute_in_production() {
     let s = funded_campaign();
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &300i128);
-    assert_eq!(s.client.get_campaign(&s.campaign_id).unwrap().status, CampaignStatus::InProduction);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &300i128);
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).unwrap().status,
+        CampaignStatus::InProduction
+    );
 
     s.client
         .open_dispute(&s.campaign_id, &s.investor1, &Symbol::new(&s.env, "Delay"));
     assert_eq!(
-        s.client.get_campaign(&s.campaign_id).status,
+        s.client.get_campaign(&s.campaign_id).unwrap().status,
         CampaignStatus::Disputed
     );
-    assert_eq!(s.client.get_campaign(&s.campaign_id).unwrap().status, CampaignStatus::Disputed);
 }
 
 #[test]
 fn test_mark_failed_in_production() {
     let s = token_funded_campaign();
-    s.client.release_tranche(&s.campaign_id, &s.farmer, &300i128);
-    assert_eq!(s.client.get_campaign(&s.campaign_id).unwrap().status, CampaignStatus::InProduction);
+    s.client
+        .release_tranche(&s.campaign_id, &s.farmer, &300i128);
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).unwrap().status,
+        CampaignStatus::InProduction
+    );
 
     s.client.mark_failed(&s.campaign_id);
-    assert_eq!(s.client.get_campaign(&s.campaign_id).unwrap().status, CampaignStatus::Failed);
+    assert_eq!(
+        s.client.get_campaign(&s.campaign_id).unwrap().status,
+        CampaignStatus::Failed
+    );
 }
 
 // ─── not-found getter tests ──────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-use crate::types::{Campaign, DataKey, Dispute, HarvestRecord, TrancheList};
+use crate::{Campaign, DataKey, Dispute, HarvestRecord, TrancheList};
 use soroban_sdk::{Address, Env, Vec};
 
 const DAY_IN_LEDGERS: u32 = 17280;

@@ -369,8 +369,10 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     h.registry
         .link_campaign_escrow(&h.campaign_id, &h.farmer, &h.escrow.address, &crop, &region);
     assert_eq!(
-        h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
-        h.registry.get_campaign_record(&h.campaign_id).status,
+        h.registry
+            .get_campaign_record(&h.campaign_id)
+            .unwrap()
+            .status,
         RegistryCampaignStatus::Active
     );
 
@@ -386,8 +388,10 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     // The registry mirror has silently drifted: escrow says Failed,
     // registry still says Active, with no on-chain signal of it.
     assert_eq!(
-        h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
-        h.registry.get_campaign_record(&h.campaign_id).status,
+        h.registry
+            .get_campaign_record(&h.campaign_id)
+            .unwrap()
+            .status,
         RegistryCampaignStatus::Active
     );
 
@@ -395,8 +399,10 @@ fn reconcile_campaign_status_self_heals_after_missed_orchestrator_call() {
     let corrected = h.registry.reconcile_campaign_status(&h.campaign_id);
     assert!(corrected);
     assert_eq!(
-        h.registry.get_campaign_record(&h.campaign_id).unwrap().status,
-        h.registry.get_campaign_record(&h.campaign_id).status,
+        h.registry
+            .get_campaign_record(&h.campaign_id)
+            .unwrap()
+            .status,
         RegistryCampaignStatus::Failed
     );
     assert!(registry_emitted(&h, "CampaignStatusReconciled"));
@@ -485,7 +491,7 @@ fn escrow_wired_to_registry_populates_activity_and_status() {
         ActivityAction::CampaignFunded
     );
 
-    let record = registry.get_campaign_record(&campaign_id);
+    let record = registry.get_campaign_record(&campaign_id).unwrap();
     assert_eq!(record.status, RegistryCampaignStatus::Funded);
 }
 

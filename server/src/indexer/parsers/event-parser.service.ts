@@ -1129,6 +1129,17 @@ export class EventParserService {
         txHash: parsed.txHash,
       },
     });
+
+    // `release_tranche` (contracts/production_escrow/src/lib.rs) moves a
+    // campaign from Funded to InProduction on its first call. Mirror that
+    // lifecycle transition in the index, scoping the write to the current
+    // `Funded` status so a second/third release on an already-InProduction
+    // campaign matches zero rows and is a no-op instead of a redundant write.
+    await this.prisma.campaign.updateMany({
+      where: { id: data.campaignId, status: 'Funded' },
+      data: { status: 'InProduction' },
+    });
+
     this.logger.log(
       { campaignId: data.campaignId, recipient: data.recipient },
       'Tranche released',

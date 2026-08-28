@@ -47,12 +47,10 @@ export class HealthController {
           await this.prisma.$queryRaw`SELECT 1`;
           return { database: { status: 'up' } };
         } catch (err) {
-          const message =
-            err instanceof Error ? err.message : String(err);
-          throw new HCE(
-            'Database check failed',
-            { database: { status: 'down', message } },
-          );
+          const message = err instanceof Error ? err.message : String(err);
+          throw new HCE('Database check failed', {
+            database: { status: 'down', message },
+          });
         }
       },
 

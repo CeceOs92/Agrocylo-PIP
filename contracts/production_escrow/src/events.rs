@@ -1,4 +1,4 @@
-use crate::types::DisputeResolution;
+use crate::DisputeResolution;
 use soroban_sdk::{Address, Env, Symbol};
 
 pub fn emit_campaign_created(env: &Env, campaign_id: u64, farmer: Address, target_amount: i128) {
